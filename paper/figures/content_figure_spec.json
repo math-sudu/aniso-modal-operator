@@ -1,0 +1,127 @@
+{
+  "geometry": {
+    "radius_m": 5.034,
+    "coefficients": [
+      -0.068772,
+      -0.0604,
+      0.0656,
+      -0.0031,
+      -0.0212,
+      0.006,
+      0.0042,
+      -0.0051,
+      0.0025,
+      0.0034
+    ],
+    "source_equation": "eq:hs_coefficients"
+  },
+  "figures": [
+    {
+      "display_job_id": "domain-coupling",
+      "dimensions_mm": [
+        137.06932337,
+        128
+      ],
+      "data_sources": []
+    },
+    {
+      "display_job_id": "density-invariance",
+      "dimensions_mm": [
+        137.06932337,
+        55
+      ],
+      "data_sources": [
+        "results/data/derived/atlas_family_box.csv"
+      ]
+    },
+    {
+      "display_job_id": "analyticity-sampling",
+      "dimensions_mm": [
+        137.06932337,
+        34
+      ],
+      "data_sources": [
+        "results/data/derived/constraint_conditioning_law.csv"
+      ]
+    },
+    {
+      "display_job_id": "kernel-validity",
+      "dimensions_mm": [
+        137.06932337,
+        46
+      ],
+      "data_sources": [
+        "results/data/derived/closed_kernel_ladder.csv"
+      ]
+    },
+    {
+      "display_job_id": "exterior-cost",
+      "dimensions_mm": [
+        137.06932337,
+        94
+      ],
+      "data_sources": [
+        "results/data/derived/exterior_reference_ladder.csv",
+        "results/data/derived/exterior_cost_ladder.csv",
+        "results/data/derived/near_field_interface_error_hs100.csv"
+      ]
+    },
+    {
+      "display_job_id": "excavation-response",
+      "dimensions_mm": [
+        137.06932337,
+        155
+      ],
+      "data_sources": [
+        "results/data/derived/near_field_stress_hs100.csv",
+        "results/data/derived/wall_hoop_hs100.csv"
+      ]
+    },
+    {
+      "display_job_id": "displacement-response",
+      "dimensions_mm": [
+        137.06932337,
+        155
+      ],
+      "data_sources": [
+        "results/data/derived/near_field_displacement_hs100.csv",
+        "results/data/derived/wall_hoop_hs100.csv"
+      ]
+    },
+    {
+      "display_job_id": "lined-section-demo",
+      "dimensions_mm": [
+        137.06932337,
+        172
+      ],
+      "data_sources": [
+        "results/data/derived/lined_demo_summary.csv",
+        "results/data/derived/lined_demo_actions.csv",
+        "results/data/derived/lined_contact_sensitivity.csv"
+      ]
+    },
+    {
+      "display_job_id": "frictional-contact",
+      "dimensions_mm": [
+        137.06932337,
+        120
+      ],
+      "data_sources": [
+        "results/data/derived/frictional_contact_mesh_refined.csv",
+        "results/data/derived/frictional_contact_mesh_refined_actions.csv",
+        "results/data/derived/frictional_contact_mesh_refined_interface.csv"
+      ]
+    },
+    {
+      "display_job_id": "moxi-monitoring",
+      "dimensions_mm": [
+        137.06932337,
+        108
+      ],
+      "data_sources": [
+        "results/data/field/moxi675/geometry_contours.csv",
+        "results/data/field/moxi675/monitoring_deformation.csv"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+/results/data/derived/
+/results/data/reference/
+/results/data/generated/
+/results/data/field/moxi675/geometry_contours.csv
+*.pdf
+*.svg
+*.png
+*.log
