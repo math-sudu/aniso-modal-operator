@@ -111,17 +111,6 @@
         "results/data/derived/frictional_contact_mesh_refined_actions.csv",
         "results/data/derived/frictional_contact_mesh_refined_interface.csv"
       ]
-    },
-    {
-      "display_job_id": "moxi-monitoring",
-      "dimensions_mm": [
-        137.06932337,
-        108
-      ],
-      "data_sources": [
-        "results/data/field/moxi675/geometry_contours.csv",
-        "results/data/field/moxi675/monitoring_deformation.csv"
-      ]
     }
   ]
 }

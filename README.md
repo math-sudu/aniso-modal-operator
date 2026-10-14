@@ -5,8 +5,8 @@ and lining response**, by Pengcheng Zhu, Tielin Chen, Dingli Zhang and
 Yulong Wang. Correspondence: tlchen1@bjtu.edu.cn.
 
 The repository contains the complex-potential exterior operator, its
-finite-element coupling, support and contact calculations, figure scripts,
-original field photographs and Moxi monitoring inputs. Numerical tables and
+finite-element coupling, support and contact calculations, figure scripts and
+original field photographs. Numerical tables and
 figures are generated locally. The accompanying research archive contains
 the manuscript's saved calculation results.
 
@@ -17,7 +17,7 @@ Use Python 3.11 or later and run these commands from the repository root:
 ```shell
 python -m pip install -r requirements.txt
 python -B check_release.py --solvers-only
-python -B reproduce_data.py inputs
+python -B reproduce_data.py --help
 python -B reference_convergence.py --central-only
 ```
 
@@ -35,14 +35,7 @@ release. Independent analytical and reference-resolution checks remain.
 
 ## Reproduce figures and tables
 
-Figure 10 uses the supplied observations and the six-arc section definition:
-
-```shell
-python -B reproduce_data.py inputs
-python -B code/figure_exports/moxi_monitoring.py
-```
-
-For all ten figures, first generate their numerical data, then render:
+For all nine figures, first generate their numerical data, then render:
 
 ```shell
 python -B reproduce_data.py figures --list
@@ -115,20 +108,8 @@ table in the accompanying research archive.
   20/1.5 MPa and 24 mm chord allowances. Its interval must also satisfy the
   ground strength condition. It is an unfactored scenario screen.
 
-`results/data/field/moxi675/` contains 121 original monitoring entries,
-construction events and the 12.86-by-10.45 m inner-section specification.
-Survey chords lie 2.5, 6.0 and 9.5 m below the crown. Original day/value text,
-repeated readings, units, value flags and source-table cell locators remain
-in the CSV. All four channels end on reported day 39. The plot uses cumulative
-values on the reported days; flagged unreadable or malformed entries break
-the line. Reported events are lower-bench excavation at day 4, primary-ring
-closure at day 8 and invert-concrete placement at day 25.
-
-These are measured histories. Quantitative prediction of the monitored
-section remains unvalidated: the records do not independently determine
-support-installation release or the evolution of ground and support
-properties. Numerical-reference errors concern the prescribed horseshoe
-benchmark. Original field photographs provide engineering context.
+Numerical-reference errors concern the prescribed horseshoe benchmark.
+Original field photographs provide engineering context.
 
 Please cite the accompanying article when using the implementations or
 inputs. Bibliographic details of the scientific sources are in
