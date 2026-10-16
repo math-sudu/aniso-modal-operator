@@ -66,6 +66,7 @@ are also written under `results/data/derived/`.
 | Table 5: noncircular-hole stress concentration | `code/figure_exports/notch_scf.py --refinement 2 --harmonics 64` |
 | Table 6: staged plasticity, near domain | `code/figure_exports/localized_plasticity.py --mesh 48 256 --output results/data/derived/localized_plasticity_mesh_refined.csv` |
 | Table 6: staged plasticity, expanded domain | `code/figure_exports/localized_plasticity.py --mesh 48 128 --rho 4 --output results/data/derived/localized_plasticity_domain_expanded.csv` |
+| Section 7.4: same-law elastic first yield | `code/figure_exports/dp_onset.py` |
 | Section 5.3: fixed-FE exterior replacements | `code/figure_exports/support_operator.py --study contact`, then `--study thickness`, `--study bonded --refined-spectral` and `--study plastic` |
 | Section 7.2; response Table R2-6: lining modulus | `code/figure_exports/lining_modulus.py` |
 | Section 7.2; response Table R2-19: local thickness | `code/figure_exports/lining_thickness.py` |
