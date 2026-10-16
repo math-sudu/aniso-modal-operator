@@ -14,10 +14,11 @@ from closure_env import bridge_pinned
 bridge_pinned()
 from exec20_src.material import material_F
 from exec26_src import protocol as P
-from exec26_src.fe_mapped import AnisoAnnulusFE, MappedMesh, condensed_mapped_system, mapped_released_load, solve_condensed, strip_translation
+from exec26_src.fe_mapped import AnisoAnnulusFE, MappedMesh, condensed_mapped_system as spectral_system, mapped_released_load, solve_condensed, strip_translation
 from exec26_src.geometry import horseshoe_map
 from exec26_src.ls_ref import LSReference
 from modal_condensation import condense_with, nodal_from_modal
+from exterior_operator import condensed_mapped_system
 from tj_operator_grade_convergence import composed_modal
 OUT = ROOT / 'results/data/derived'
 P0_V, P0_H, P0_S = (-15000000.0, -13500000.0, 0.0)
@@ -105,7 +106,7 @@ def operator_solve(mat, n_r: int, n_t: int, s_scale: float=1.0):
     fe = AnisoAnnulusFE(mesh, mat)
     t_assemble = time.perf_counter() - t0
     t0 = time.perf_counter()
-    K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO, n_modes=P.N_MODES_GENERAL)
+    K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO)
     t_operator = time.perf_counter() - t0
     if s_scale != 1.0:
         K_sys = (fe.K - (fe.K - K_sys) * s_scale).tocsr()
@@ -260,7 +261,7 @@ paths differ in the operator and in nothing else."""
     mesh = MappedMesh(SMAP, RHO_TIGHT, n_r, n_t)
     fe = AnisoAnnulusFE(mesh, mat)
     if route == 'spectral':
-        K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO_TIGHT, n_modes=P.N_MODES_GENERAL)
+        K_sys, _ = spectral_system(fe, mat, SMAP, RHO_TIGHT, n_modes=P.N_MODES_GENERAL)
     elif route == 'composed':
         n_h = n_t // 2 - 1
         S_mod = composed_modal(mat, RHO_TIGHT, n_h)
@@ -280,7 +281,7 @@ Agreement with the library's condensed system isolates operator changes from cha
     mat = material_F(2.625, 45.0, 'routegate')
     mesh = MappedMesh(SMAP, RHO_TIGHT, n_r, n_t)
     fe = AnisoAnnulusFE(mesh, mat)
-    K_lib, _ = condensed_mapped_system(fe, mat, SMAP, RHO_TIGHT, n_modes=P.N_MODES_GENERAL)
+    K_lib, _ = spectral_system(fe, mat, SMAP, RHO_TIGHT, n_modes=P.N_MODES_GENERAL)
     tier = SMAP.scaled(RHO_TIGHT)
     S_mod = assemble_modal_dtn(mat, tier, n_h, P.N_MODES_GENERAL)['S'][2:, :]
     K_loc = condense_with(fe, nodal_from_modal(S_mod, mesh.theta_nodes, n_h))
@@ -393,7 +394,7 @@ def stage_harmonic_selection(certified: dict) -> list[dict]:
         f = mapped_released_load(mesh, P0_V, P0_H, P0_S)
         for n_h in N_H_LADDER:
             t0 = time.perf_counter()
-            K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO, n_h=n_h, n_modes=P.N_MODES_GENERAL)
+            K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO, n_h=n_h)
             t_operator = time.perf_counter() - t0
             u = strip_translation(solve_condensed(fe, K_sys, f))
             err = rel_to_ls(mesh, u, ref)

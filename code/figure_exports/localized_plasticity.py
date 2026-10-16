@@ -88,7 +88,7 @@ class CoupledSection:
         self.mesh = lined.MappedMesh(lined.SMAP, rho, nr, nt)
         self.fe = lined.AnisoAnnulusFE(self.mesh, self.mat)
         assemble = lined.condensed_mapped_system if exterior_system is None else exterior_system
-        elastic, _ = assemble(self.fe, self.mat, lined.SMAP, rho, n_modes=lined.P.N_MODES_GENERAL)
+        elastic, _ = assemble(self.fe, self.mat, lined.SMAP, rho)
         self.exterior = (elastic - self.fe.K).tocsr() / 1000000.0
         self.elastic = elastic / 1000000.0
         self.law = DruckerPrager(stiffness_3d(self.mat), cohesion)

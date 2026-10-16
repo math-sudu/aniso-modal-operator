@@ -108,7 +108,7 @@ class ContactSection:
         self.mesh = lined.MappedMesh(lined.SMAP, lined.RHO, nr, nt)
         self.fe = lined.AnisoAnnulusFE(self.mesh, self.mat)
         assemble = lined.condensed_mapped_system if exterior_system is None else exterior_system
-        kg, _ = assemble(self.fe, self.mat, lined.SMAP, lined.RHO, n_modes=lined.P.N_MODES_GENERAL)
+        kg, _ = assemble(self.fe, self.mat, lined.SMAP, lined.RHO)
         kg = kg.tocsr() / 1000000.0
         self.fg = lined.mapped_released_load(self.mesh, *lined.insitu(pressure)) / 1000000.0
         nw = 2 * nt

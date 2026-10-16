@@ -136,9 +136,9 @@ def bonded_case(bank, nr, layers, patch=False):
                 bank.traces.append(dict(case=row['case'], n_r=nr, **bank.identity, thickness_change_m=change, harmonic=harmonic, ux_cos_m=float(coefficients[harmonic, 0].real), ux_sin_m=float(-coefficients[harmonic, 0].imag), uy_cos_m=float(coefficients[harmonic, 1].real), uy_sin_m=float(-coefficients[harmonic, 1].imag)))
     return (rows, profiles)
 
-def plastic_case(bank, nr):
+def plastic_case(bank, nr, routes=('spectral', 'cauchy_64')):
     rows, profiles, final = ([], [], {})
-    for route in ('spectral', 'cauchy_64'):
+    for route in routes:
         model = plasticity.CoupledSection(nr, bank.identity['n_t'], 2.0, 5.0, exterior_system=bank.assembler(route))
         u = np.zeros(model.mesh.n_dof)
         plastic = np.zeros((*model.weight.shape, 4))
@@ -164,8 +164,8 @@ def plastic_case(bank, nr):
                 print('Plastic', route, stage, round(release, 4), row['closure_vertical_mm'], flush=True)
         eq = np.sqrt(2 / 3 * np.sum((plastic @ plasticity.DEV) ** 2, axis=-1))
         final[route] = dict(eq=eq, u=u, stress=stress)
-    difference = final['spectral']['eq'] > 1e-10
-    difference ^= final['cauchy_64']['eq'] > 1e-10
+    difference = final[routes[0]]['eq'] > 1e-10
+    difference ^= final[routes[1]]['eq'] > 1e-10
     disagreement = float(model.weight[difference].sum())
     for row in rows:
         if row['release'] == 1.0:

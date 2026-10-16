@@ -48,7 +48,7 @@ def main():
             mesh = lined.MappedMesh(lined.SMAP, lined.RHO, nr, nt)
             mat = lined.material_F(2.625, 0.0)
             fe = lined.AnisoAnnulusFE(mesh, mat)
-            ground, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO, n_modes=lined.P.N_MODES_GENERAL)
+            ground, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO)
             row, _ = solve_case(mesh, fe, ground, 2.625, 0.0, 1.4)
             lo, hi = screening.release_interval(row, 20.0, 1.5, 24.0, 24.0)
             row.update(n_r=nr, n_t=nt, layers=layers, release_min_stress=lo, release_max_closure=hi)
@@ -64,7 +64,7 @@ def main():
             start = time.perf_counter()
             mat = lined.material_F(ratio, dip)
             fe = lined.AnisoAnnulusFE(mesh, mat)
-            ground, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO, n_modes=lined.P.N_MODES_GENERAL)
+            ground, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO)
             fields = []
             for pressure in (0.8, 0.9, 1.0):
                 row, stress = solve_case(mesh, fe, ground, ratio, dip, pressure)

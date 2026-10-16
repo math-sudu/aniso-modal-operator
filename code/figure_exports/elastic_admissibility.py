@@ -71,7 +71,7 @@ def gauss_stress(mesh, mat, u):
 def case_rows(mat, ratio, dip, n_r, n_t, lateral_values, release):
     mesh = lined.MappedMesh(lined.SMAP, lined.RHO, n_r, n_t)
     fe = lined.AnisoAnnulusFE(mesh, mat)
-    k, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO, n_modes=lined.P.N_MODES_GENERAL)
+    k, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO)
     rows = []
     for lateral in lateral_values:
         load = lined.insitu(lateral)

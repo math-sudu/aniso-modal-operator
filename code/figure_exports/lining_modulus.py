@@ -33,7 +33,7 @@ def main():
         start = time.perf_counter()
         mat = lined.material_F(ratio, dip)
         fe = lined.AnisoAnnulusFE(mesh, mat)
-        ground, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO, n_modes=lined.P.N_MODES_GENERAL)
+        ground, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO)
         for pressure in pressures:
             load = lined.mapped_released_load(mesh, *lined.insitu(pressure))
             for factor in args.factors:

@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import scipy.sparse as sp
 from exec26_src.fe_mapped import AnisoAnnulusFE, _basis_profiles, _COMPS, theta_ring_mass
-__all__ = ['nodal_from_modal', 'condense_with']
+__all__ = ['nodal_from_modal', 'condense_with', 'condense_work']
 
 def nodal_from_modal(S_mod: np.ndarray, theta_nodes: np.ndarray, n_h: int) -> np.ndarray:
     """Nodal traction-density DtN synthesized from an arbitrary modal matrix.
@@ -41,8 +41,14 @@ def condense_with(fe: AnisoAnnulusFE, S_dens: np.ndarray):
     Bm[0::2, 0::2] = M
     Bm[1::2, 1::2] = M
     A_loc = Bm @ S_dens
+    return condense_work(fe, A_loc)
+
+def condense_work(fe: AnisoAnnulusFE, work: np.ndarray):
+    """Subtract the exterior boundary-work matrix on the outer-ring DOFs."""
+    mesh = fe.mesh
+    n_t = mesh.n_t
     dofs = mesh.ring_dofs('outer')
     rows = np.repeat(dofs, 2 * n_t)
     cols = np.tile(dofs, 2 * n_t)
-    A_glob = sp.coo_matrix((A_loc.ravel(), (rows, cols)), shape=(mesh.n_dof, mesh.n_dof)).tocsr()
+    A_glob = sp.coo_matrix((work.ravel(), (rows, cols)), shape=(mesh.n_dof, mesh.n_dof)).tocsr()
     return (fe.K - A_glob).tocsr()

@@ -132,7 +132,12 @@ python -B code/figure_exports/notch_scf.py --assess-only
   routines. `lib/exec26_src/` contains conformal maps, exterior assembly,
   mapped finite elements and independent complex-potential references.
 - `code/closure/numeric/p21_exact_evaluation.py` builds the general-map
-  Cauchy-constraint operator; `p22_graded_kernels.py` evaluates the explicit
+  Cauchy-constraint operator. The shared production entry in
+  `code/closure/exterior_operator.py` uses N+64 resultant harmonics,
+  enforces the simple-root domain for general maps, and supplies a stable
+  coincident-root block for circles and ellipses. It couples periodic P1
+  traces through two-sided Fourier projection, `pi*T.T*S_modal*T`;
+  `p22_graded_kernels.py` evaluates the explicit
   first- and second-order mapping corrections. The pole-based realization is
   in `lib/exec26_src/sf_general.py`.
 - Numerical horseshoe parameters are prescribed scenarios. Geometry follows

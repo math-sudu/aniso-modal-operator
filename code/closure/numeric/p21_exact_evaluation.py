@@ -37,14 +37,14 @@ def branch_rho_crit(ser: dict) -> float:
     inside = np.abs(roots)[np.abs(roots) < 1.0]
     return float(inside.max()) if inside.size else 0.0
 
-def cauchy_radius(ser: dict, override: float | None=None) -> float:
+def cauchy_radius(ser: dict, override: float | None=None, minimum: float=0.85) -> float:
     """Choose a test radius strictly between the branch fold shell and one.
 
     The image points still require the winding check in e_row_mirror.
     """
     critical = branch_rho_crit(ser)
     if override is None:
-        eta = max(0.85, critical + 0.02) if critical + 0.02 < 1.0 else (1.0 + critical) / 2.0
+        eta = max(minimum, critical + 0.02) if critical + 0.02 < 1.0 else (1.0 + critical) / 2.0
     else:
         eta = float(override)
     if not critical < eta < 1.0:
@@ -85,17 +85,37 @@ def e_row_mirror(ser: dict, w0: complex, mmax: int):
         out[-m] = complex(-np.sum(outside ** (-m))) if outside.size else 0.0
     return out
 
-def assemble_exact(mat, smap: SectionMap, n_h: int, n_t: int, eta_override: float | None=None, conj_channel_bug: bool=False):
+def require_simple_roots(mat) -> None:
+    """Reject overlapping root-uncertainty discs before dividing by ell'.
+
+    The disc radius is the first-order polynomial residual bound divided
+    by |ell'|. The 32-operation roundoff bound includes complex quartic
+    evaluation and the stored coefficient precision.
+    """
+    b = mat.beta
+    coefficients = np.array([b['11'], -2 * b['16'], 2 * b['12'] + b['66'], -2 * b['26'], b['22']])
+    eps = np.finfo(float).eps
+    gamma = 32 * eps / (1 - 32 * eps)
+    radii = []
+    for mu in mat.mus:
+        derivative = abs(lprime(b, mu))
+        bound = abs(np.polyval(coefficients, mu)) + gamma * np.polyval(abs(coefficients), abs(mu))
+        radii.append(bound / derivative if derivative else np.inf)
+    if abs(mat.mus[0] - mat.mus[1]) <= sum(radii):
+        raise ValueError('General-map Cauchy assembly requires numerically separated simple characteristic roots; the root uncertainty discs overlap. A confluent general-map construction is required for this material.')
+
+def assemble_exact(mat, smap: SectionMap, n_h: int, n_t: int, eta_override: float | None=None, conj_channel_bug: bool=False, radius_floor: float=0.85):
     """Assemble the Cauchy-constraint DtN operator.
 
 Project n_t+1 samples per branch modulo constants, leaving 4*n_t real equations for the nonzero resultant harmonics. Boundary displacement and resultant have zero parameter mean. constants[(n_in, comp)] holds the potential values at infinity. Invalid radii or image points raise ValueError before the solve. Return S, cond, sols, constants, sers, lps and etas."""
     if not 1 <= n_h <= n_t:
         raise ValueError('Require 1 <= n_h <= n_t for the retained harmonic band')
+    require_simple_roots(mat)
     mus = mat.mus
     pqs = mat.pq
     lps = [lprime(mat.beta, mu) for mu in mus]
     sers = [smap.zk_series(mu) for mu in mus]
-    etas = [cauchy_radius(ser, eta_override) for ser in sers]
+    etas = [cauchy_radius(ser, eta_override, radius_floor) for ser in sers]
     rings = [_wall_ring(ser, n_t + 1, eta) for ser, eta in zip(sers, etas)]
     Et = {}
     means = []

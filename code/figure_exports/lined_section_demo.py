@@ -14,7 +14,8 @@ bridge_pinned()
 from exec20_src.fe_aniso import assemble_stiffness_D
 from exec20_src.material import material_F
 from exec26_src import protocol as P
-from exec26_src.fe_mapped import AnisoAnnulusFE, MappedMesh, condensed_mapped_system, mapped_released_load
+from exec26_src.fe_mapped import AnisoAnnulusFE, MappedMesh, mapped_released_load
+from exterior_operator import condensed_mapped_system
 from exec26_src.geometry import horseshoe_map
 from proto_src.fe_annulus import _bmat_all, dmat_plane_strain
 OUT = ROOT / 'results/data/derived'
@@ -159,7 +160,7 @@ def merged_operator_solve(mat, n_r: int, n_t: int, ring_e: float, s_scale: float
     """Ground closed by ``S_f``, ring at the wall, released load."""
     mesh = MappedMesh(SMAP, RHO, n_r, n_t)
     fe = AnisoAnnulusFE(mesh, mat)
-    K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO, n_modes=P.N_MODES_GENERAL)
+    K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO)
     if s_scale != 1.0:
         K_sys = (fe.K - (fe.K - K_sys) * s_scale).tocsr()
     f_g = mapped_released_load(mesh, *(load or LOAD_BASE))
@@ -250,7 +251,7 @@ def unlined_operator_solve(mat, n_r: int, n_t: int, s_scale: float=1.0, load=Non
     from exec26_src.fe_mapped import solve_condensed, strip_translation
     mesh = MappedMesh(SMAP, RHO, n_r, n_t)
     fe = AnisoAnnulusFE(mesh, mat)
-    K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO, n_modes=P.N_MODES_GENERAL)
+    K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO)
     if s_scale != 1.0:
         K_sys = (fe.K - (fe.K - K_sys) * s_scale).tocsr()
     f = mapped_released_load(mesh, *(load or LOAD_BASE))
@@ -262,7 +263,7 @@ def interface_net_force(mat, n_r: int, n_t: int, ring_e: float) -> float:
 A self-equilibrated excavation load and internal support interaction give zero net force across the exterior interface."""
     mesh = MappedMesh(SMAP, RHO, n_r, n_t)
     fe = AnisoAnnulusFE(mesh, mat)
-    K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO, n_modes=P.N_MODES_GENERAL)
+    K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO)
     A = (fe.K - K_sys).tocsr()
     f_g = mapped_released_load(mesh, *LOAD_BASE)
     _, _, u, _ = _assemble_and_solve(mesh, K_sys, f_g, ring_e, pin_ring=None)

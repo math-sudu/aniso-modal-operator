@@ -31,7 +31,7 @@ def main():
     for ratio, dip, pressure in cases:
         mat = lined.material_F(ratio, dip)
         fe = lined.AnisoAnnulusFE(mesh, mat)
-        ground, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO, n_modes=lined.P.N_MODES_GENERAL)
+        ground, _ = lined.condensed_mapped_system(fe, mat, lined.SMAP, lined.RHO)
         load = lined.mapped_released_load(mesh, *lined.insitu(pressure))
         for center, change in variations:
             t = thickness(mesh.theta_nodes, center, change, args.width)

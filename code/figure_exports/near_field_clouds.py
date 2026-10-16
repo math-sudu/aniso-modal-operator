@@ -13,7 +13,9 @@ from matplotlib.path import Path as MplPath
 from exec20_src.fe_aniso import AnisoAnnulusFE
 from exec20_src.material import material_F
 from exec26_src import protocol as P
-from exec26_src.fe_mapped import MappedMesh, condensed_mapped_system, mapped_released_load, solve_condensed, strip_translation
+from exec26_src.fe_mapped import MappedMesh, mapped_released_load, solve_condensed, strip_translation
+sys.path.insert(0, str(PROJECT_ROOT / 'code/closure'))
+from exterior_operator import condensed_mapped_system
 from exec26_src.geometry import horseshoe_map
 from exec26_src.ls_ref import LSReference, _ti_bridge
 from lekhnitskii_general import LekhnitskiiGeneral, solve_ls
@@ -122,7 +124,7 @@ def main() -> None:
             peak_th = peak_val = float('nan')
         mesh = MappedMesh(smap, rho_out, MESH_NR, MESH_NT)
         fe = AnisoAnnulusFE(mesh, mat)
-        K_sys, _ = condensed_mapped_system(fe, mat, smap, rho_out, n_modes=P.N_MODES_GENERAL)
+        K_sys, _ = condensed_mapped_system(fe, mat, smap, rho_out)
         f_load = mapped_released_load(mesh, sxx_r, syy_r, sxy_r)
         u_c = strip_translation(solve_condensed(fe, K_sys, f_load))
         ux, uy = ref.displacements(mesh.xy[:, 0], mesh.xy[:, 1])
