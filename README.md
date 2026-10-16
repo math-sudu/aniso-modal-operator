@@ -122,7 +122,8 @@ lower end and loads its upper end, as in the source's Section 5. The
 infinite model uses the shared Cauchy exterior with a projected P1 trace.
 Experimental differences, source-FEM differences and mesh refinement are
 reported separately. `--protocol` reproduces the boundary, element-order
-and stress-recovery controls on two representative holes.
+and stress-recovery controls on two representative holes, including the
+source's 20 segments per rounded corner.
 
 ```shell
 python -B code/figure_exports/notch_scf.py

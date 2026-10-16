@@ -12,14 +12,15 @@ hole = importlib.import_module('orthotropic_hole')
 from exterior_operator import assemble_modal, projected_work
 HERE = Path(__file__).resolve().parents[2] / 'results/data/derived'
 
-def wall_points(width, height, radius, shape, refinement):
+def wall_points(width, height, radius, shape, refinement, corner_segments=None):
     if shape == 'circle':
         theta = np.arange(256 * refinement) * 2 * np.pi / (256 * refinement)
         return radius * np.c_[np.cos(theta), np.sin(theta)]
     centers = np.array([[width / 2 - radius, height / 2 - radius], [-width / 2 + radius, height / 2 - radius], [-width / 2 + radius, -height / 2 + radius], [width / 2 - radius, -height / 2 + radius]])
     arcs = []
+    count = 32 * refinement if corner_segments is None else corner_segments
     for j, center in enumerate(centers):
-        theta = (j + np.arange(32 * refinement + 1) / (32 * refinement)) * np.pi / 2
+        theta = (j + np.arange(count + 1) / count) * np.pi / 2
         arcs.append(center + radius * np.c_[np.cos(theta), np.sin(theta)])
     points = []
     for arc, following in zip(arcs, arcs[1:] + arcs[:1]):
@@ -29,9 +30,9 @@ def wall_points(width, height, radius, shape, refinement):
         points.extend(a + (b - a) * np.arange(1, count)[:, None] / count)
     return np.asarray(points)
 
-def mesh(observation, kind, refinement):
+def mesh(observation, kind, refinement, corner_segments=None):
     width, height, radius = (float(observation[k]) for k in ('width_mm', 'height_mm', 'corner_radius_mm'))
-    wall = wall_points(width, height, radius, observation['shape'], refinement)
+    wall = wall_points(width, height, radius, observation['shape'], refinement, corner_segments)
     section = hole.base.SectionMap(1.8 * max(width, height), [0.0, 0.12, 0.025])
     if kind == 'infinite':
         theta = np.arange(256 * refinement) * 2 * np.pi / (256 * refinement)
@@ -223,13 +224,13 @@ def protocol():
         observations = list(csv.DictReader(stream))
     mat = hole.material(22540.0, 10940.0, 3540.0, 0.3)
     rows = []
-    for refinement, order in ((1, 2), (2, 1), (2, 2)):
+    for refinement, order, corner_segments in ((1, 2, 32), (2, 1, 64), (2, 2, 64), (2, 2, 20)):
         for i in (5, 11):
             ob = observations[i]
-            data = mesh(ob, 'fixed', refinement)
-            for kind in ('fixed', 'traction'):
+            data = mesh(ob, 'fixed', refinement, corner_segments)
+            for kind in ('fixed',) if corner_segments == 20 else ('fixed', 'traction'):
                 info = solve(data, mat, kind, 10.0, 0, order)
-                row = dict(**ob, boundary=kind, refinement=refinement, element_order=order, harmonics=0, relative_difference=info['axial_scf'] / float(ob['observed_scf']) - 1, source_fem_difference=info['axial_scf'] / float(ob['source_fem_scf']) - 1, **info)
+                row = dict(**ob, boundary=kind, refinement=refinement, element_order=order, corner_segments=corner_segments, harmonics=0, relative_difference=info['axial_scf'] / float(ob['observed_scf']) - 1, source_fem_difference=info['axial_scf'] / float(ob['source_fem_scf']) - 1, **info)
                 rows.append(row)
                 print(row, flush=True)
     hole.write_rows(HERE / 'khechai2018_notch_protocol.csv', rows)
