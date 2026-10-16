@@ -6,9 +6,8 @@ Yulong Wang. Correspondence: tlchen1@bjtu.edu.cn.
 
 The repository contains the complex-potential exterior operator, its
 finite-element coupling, support and contact calculations, figure scripts and
-original field photographs. Numerical tables and
-figures are generated locally. The accompanying research archive contains
-the manuscript's saved calculation results.
+measured input data. Numerical tables and figures are generated locally.
+Original field photographs provide the engineering context in Figures 1 and 9.
 
 ## Install and check
 
@@ -35,7 +34,7 @@ release. Independent analytical and reference-resolution checks remain.
 
 ## Reproduce figures and tables
 
-For all nine figures, first generate their numerical data, then render:
+For all ten figures, first generate their numerical data, then render:
 
 ```shell
 python -B reproduce_data.py figures --list
@@ -44,13 +43,16 @@ python -B reproduce_figures.py
 ```
 
 The first command lists the calculation sequence. The second runs the
-material, kernel, excavation, exterior, lining and refined-contact studies;
-these full mesh and case sequences take substantially longer than plotting.
+geometry, material, kernel, excavation, exterior, displacement, lining and
+refined-contact studies. These full mesh and case sequences take substantially
+longer than plotting.
 Each study can also run separately, for example
 `python -B reproduce_data.py contact`. A failed calculation stops the sequence.
+For `exterior`, run `fields` first: the wall-profile calculation reads the
+24x128 error fields and extends them with the coarse and fine wall solutions.
 Results go to `results/data/derived/`; figure PDF/SVG files go to `figures/`.
 Times New Roman and STIX fonts are required for the manuscript typography.
-`reproduce_figures.py --only <display_job_id>` selects one of Figures 1–9;
+`reproduce_figures.py --only <display_job_id>` selects one of Figures 1–10;
 the figure IDs and sizes are in `paper/figures/content_figure_spec.json`.
 
 The additional table studies use the following commands. Their output tables
@@ -61,10 +63,12 @@ are also written under `results/data/derived/`.
 | Table 3: pole placement | `code/figure_exports/pole_placement.py` |
 | Retained bands N=31/63/127 | `code/figure_exports/pole_placement.py --case bands --output results/data/derived/band_resolution.csv` |
 | Table 4: interface order | `code/figure_exports/trace_order.py` |
-| Table 5: lining modulus | `code/figure_exports/lining_modulus.py` |
-| Table 6: local thickness | `code/figure_exports/lining_thickness.py` |
-| Table 7: staged plasticity | `code/figure_exports/localized_plasticity.py --mesh 48 256 --output results/data/derived/localized_plasticity_mesh_refined.csv` |
-| Table 8: exterior replacement | `code/figure_exports/support_operator.py --study contact`, then `--study thickness`, `--study bonded --refined-spectral` and `--study plastic` |
+| Table 5: noncircular-hole stress concentration | `code/figure_exports/notch_scf.py --refinement 2 --harmonics 64` |
+| Table 6: staged plasticity, near domain | `code/figure_exports/localized_plasticity.py --mesh 48 256 --output results/data/derived/localized_plasticity_mesh_refined.csv` |
+| Table 6: staged plasticity, expanded domain | `code/figure_exports/localized_plasticity.py --mesh 48 128 --rho 4 --output results/data/derived/localized_plasticity_domain_expanded.csv` |
+| Section 5.3: fixed-FE exterior replacements | `code/figure_exports/support_operator.py --study contact`, then `--study thickness`, `--study bonded --refined-spectral` and `--study plastic` |
+| Section 7.2; response Table R2-6: lining modulus | `code/figure_exports/lining_modulus.py` |
+| Section 7.2; response Table R2-19: local thickness | `code/figure_exports/lining_thickness.py` |
 | Ground-yield constraint | `code/figure_exports/elastic_admissibility.py` |
 | Pressure uncertainty | `code/figure_exports/pressure_uncertainty.py` |
 | Capacity variability | `code/figure_exports/capacity_variability.py` |
@@ -75,13 +79,52 @@ demands and the stress–closure screen in dependency order. Running
 `check_release.py` without `--solvers-only` additionally checks these generated
 support tables against their release partition.
 
-The refined Figure 9 contact data use a 48-by-256 ground mesh. For Table 4's
+Table 7 summarizes parameters and responses from seven cited studies.
+The refined Figure 10 contact data use a 48-by-256 ground mesh. For Table 4's
 band check, use `trace_order.py --harmonics 191 --fine-only --output
 results/data/derived/trace_order_modal_refined.csv` under
 `code/figure_exports/`. Mesh, case and material options are documented by each
-script's `--help` where an argument parser is provided. The original Abaqus
-comparison requires the commercial solver and is represented by its result
-table in the accompanying research archive.
+script's `--help` where an argument parser is provided.
+
+## Experimental inputs and comparisons
+
+The source observations are supplied under `results/data/derived/` and are
+kept separate from the generated predictions.
+
+For Figure 6, `fatima2017_observations.csv` preserves the 2108 candidate
+image locations and decoding mask from Fatima and Rowlands (2017),
+DOI [10.17265/2159-5275/2017.04.005](https://doi.org/10.17265/2159-5275/2017.04.005).
+The comparison uses the 1278 readable locations, reflected to x transverse
+and y axial, with the source's 0.1R hole-edge exclusion and a 1.05 mm square
+subset average. The measured image and printed palette are retained in
+`figures/displacement-measurement/assets/fatima2017_measured_quadrant.npz`.
+For display, printed contour strokes take the nearest decoded fill color;
+the decoded bands, white gaps and numerical observations are preserved.
+
+`python -B reproduce_data.py displacement` generates the refined fields and
+the three continuous model contours used in Figure 6. To reproduce the
+coarse/fine assessment and normalized spatial-pattern metrics, run:
+
+```shell
+python -B code/figure_exports/orthotropic_hole.py --from-data --case fatima
+python -B code/figure_exports/orthotropic_hole.py --from-data --case fatima --refinement 2 --harmonics 64
+python -B code/figure_exports/orthotropic_hole.py --assess-only
+python -B displacement_pattern.py
+```
+
+For Table 5, `khechai2018_table3.csv` preserves the source stress-concentration
+measurements from Khechai et al. (2018),
+DOI [10.1016/j.compstruct.2017.11.060](https://doi.org/10.1016/j.compstruct.2017.11.060).
+The paper compares all seven noncircular cases using the independently
+reported material properties and the 0.5 mm corner radius. Peak axial
+stress is divided by nominal applied stress; experimental differences and
+mesh-refinement changes are reported separately.
+
+```shell
+python -B code/figure_exports/notch_scf.py
+python -B code/figure_exports/notch_scf.py --refinement 2 --harmonics 64
+python -B code/figure_exports/notch_scf.py --assess-only
+```
 
 ## Model and data interpretation
 
@@ -101,15 +144,14 @@ table in the accompanying research archive.
   `nu_hh = 0.25` and `G_vh = 4.20 GPa`. In the upright horseshoe,
   `bedding_dip_deg = 90 - material_dip_deg`. All reported loading cases are
   dry-ground, tension-positive stress calculations.
-- CSV suffixes `_m`, `_mm`, `_MPa`, `_GPa` and `_s` give metres,
-  millimetres, megapascals, gigapascals and seconds. Lining thrust and moment
-  are per metre of tunnel axis. Timing columns depend on the computer.
+- CSV suffixes `_m`, `_mm`, `_um`, `_MPa`, `_GPa` and `_s` give metres,
+  millimetres, micrometres, megapascals, gigapascals and seconds. Lining thrust
+  and moment are per metre of tunnel axis. Timing columns depend on the computer.
 - The lining screen uses prescribed compressive/tensile strengths of
   20/1.5 MPa and 24 mm chord allowances. Its interval must also satisfy the
   ground strength condition. It is an unfactored scenario screen.
 
 Numerical-reference errors concern the prescribed horseshoe benchmark.
-Original field photographs provide engineering context.
 
 Please cite the accompanying article when using the implementations or
 inputs. Bibliographic details of the scientific sources are in

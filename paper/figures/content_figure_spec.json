@@ -20,15 +20,23 @@
       "display_job_id": "domain-coupling",
       "dimensions_mm": [
         137.06932337,
-        128
+        134
       ],
+      "series_colors": [],
       "data_sources": []
     },
     {
       "display_job_id": "density-invariance",
       "dimensions_mm": [
         137.06932337,
-        55
+        116
+      ],
+      "series_colors": [
+        "#a76c1e",
+        "#7b519b",
+        "#737b83",
+        "#d3d8dc",
+        "#cdd3d7"
       ],
       "data_sources": [
         "results/data/derived/atlas_family_box.csv"
@@ -38,9 +46,11 @@
       "display_job_id": "analyticity-sampling",
       "dimensions_mm": [
         137.06932337,
-        34
+        130
       ],
+      "series_colors": [],
       "data_sources": [
+        "figures/analyticity-sampling/source_data.csv",
         "results/data/derived/constraint_conditioning_law.csv"
       ]
     },
@@ -48,9 +58,17 @@
       "display_job_id": "kernel-validity",
       "dimensions_mm": [
         137.06932337,
-        46
+        124
+      ],
+      "series_colors": [
+        "#000000",
+        "#D62728",
+        "#2055C7",
+        "#69747B",
+        "#AE791C"
       ],
       "data_sources": [
+        "results/data/derived/closed_kernel_paths.csv",
         "results/data/derived/closed_kernel_ladder.csv"
       ]
     },
@@ -58,12 +76,18 @@
       "display_job_id": "exterior-cost",
       "dimensions_mm": [
         137.06932337,
-        94
+        156
+      ],
+      "series_colors": [
+        "#70787D",
+        "#D8DCDF",
+        "#B36624",
+        "#16858A"
       ],
       "data_sources": [
-        "results/data/derived/exterior_reference_ladder.csv",
         "results/data/derived/exterior_cost_ladder.csv",
-        "results/data/derived/near_field_interface_error_hs100.csv"
+        "results/data/derived/near_field_interface_error_hs100.csv",
+        "results/data/derived/exterior_wall_profiles.csv"
       ]
     },
     {
@@ -72,6 +96,7 @@
         137.06932337,
         155
       ],
+      "series_colors": [],
       "data_sources": [
         "results/data/derived/near_field_stress_hs100.csv",
         "results/data/derived/wall_hoop_hs100.csv"
@@ -83,6 +108,7 @@
         137.06932337,
         155
       ],
+      "series_colors": [],
       "data_sources": [
         "results/data/derived/near_field_displacement_hs100.csv",
         "results/data/derived/wall_hoop_hs100.csv"
@@ -94,6 +120,7 @@
         137.06932337,
         172
       ],
+      "series_colors": [],
       "data_sources": [
         "results/data/derived/lined_demo_summary.csv",
         "results/data/derived/lined_demo_actions.csv",
@@ -106,10 +133,27 @@
         137.06932337,
         120
       ],
+      "series_colors": [],
       "data_sources": [
         "results/data/derived/frictional_contact_mesh_refined.csv",
         "results/data/derived/frictional_contact_mesh_refined_actions.csv",
         "results/data/derived/frictional_contact_mesh_refined_interface.csv"
+      ]
+    },
+    {
+      "display_job_id": "displacement-measurement",
+      "dimensions_mm": [
+        137.06932337,
+        150
+      ],
+      "series_colors": [
+        "#70787D",
+        "#E3E5E7"
+      ],
+      "data_sources": [
+        "results/data/derived/fatima2017_fields_refined.csv",
+        "results/data/derived/fatima2017_observations.csv",
+        "results/data/derived/displacement_contours.csv"
       ]
     }
   ]

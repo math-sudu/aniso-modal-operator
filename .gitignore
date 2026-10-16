@@ -1,7 +1,9 @@
 __pycache__/
 *.py[cod]
 .venv/
-/results/data/derived/
+/results/data/derived/*
+!/results/data/derived/fatima2017_observations.csv
+!/results/data/derived/khechai2018_table3.csv
 /results/data/reference/
 /results/data/generated/
 *.pdf

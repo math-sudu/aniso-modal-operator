@@ -37,12 +37,20 @@ class Operators:
         ref = self.modal['cauchy_64']
         self.rows = []
         for route, modal in self.modal.items():
-            self.rows.append(dict(**self.identity, operator=route, spectral_modes=96 if route == 'spectral' else 384 if route == 'spectral_refined' else '', spectral_grid=512 if route == 'spectral' else 2048 if route == 'spectral_refined' else '', cauchy_resultant_order=nh + int(route.split('_')[1]) if route.startswith('cauchy') else '', cauchy_radius=0.97 if route.startswith('cauchy') else '', relative_operator_difference=float(np.linalg.norm(modal - ref) / np.linalg.norm(ref))))
+            h = 2 * np.pi / nt
+            mass = np.repeat(h / 3 * (2 + np.cos(np.arange(1, nh + 1) * h)), 4)
+            work = mass[:, None] * modal
+            energy = np.linalg.eigvalsh(-(work + work.T) / 2)
+            self.rows.append(dict(**self.identity, operator=route, spectral_modes=96 if route == 'spectral' else 384 if route == 'spectral_refined' else '', spectral_grid=512 if route == 'spectral' else 2048 if route == 'spectral_refined' else '', cauchy_resultant_order=nh + int(route.split('_')[1]) if route.startswith('cauchy') else '', cauchy_radius=0.97 if route.startswith('cauchy') else '', relative_operator_difference=float(np.linalg.norm(modal - ref) / np.linalg.norm(ref)), work_reciprocity_defect=float(np.linalg.norm(work - work.T) / np.linalg.norm(work)), minimum_symmetric_exterior_eigenvalue=float(energy[0]), maximum_symmetric_exterior_eigenvalue=float(energy[-1])))
             if route == 'spectral_refined':
                 self.rows[-1].update(self.refined_stats)
         theta = 2 * np.pi * np.arange(nt) / nt
         self.nodal = {route: pole.nodal_from_modal(modal, theta, nh) for route, modal in self.modal.items()}
-        print('Operators', self.identity, self.rows[0]['relative_operator_difference'], 'reference change', self.rows[1]['relative_operator_difference'], flush=True)
+        from exec26_src.fe_mapped import theta_ring_mass
+        mass = np.kron(theta_ring_mass(nt), np.eye(2))
+        self.work = {route: mass @ density for route, density in self.nodal.items()}
+        self.traces = []
+        print('Operators', self.identity, self.rows[0]['relative_operator_difference'], 'reference change', next((row['relative_operator_difference'] for row in self.rows if row['operator'] == 'cauchy_32')), flush=True)
 
     def assembler(self, route):
 
@@ -98,7 +106,7 @@ def bonded_case(bank, nr, layers, patch=False):
     fe = lined.AnisoAnnulusFE(mesh, mat)
     pressure = 0.9 if patch else 0.6
     force = lined.mapped_released_load(mesh, *lined.insitu(pressure))
-    rows, profiles = ([], [])
+    rows, profiles, fields = ([], [], {})
     for route in bank.modal:
         kg, _ = bank.assembler(route)(fe, mat, lined.SMAP, lined.RHO)
         for change in (0.0, -0.1) if patch else (0.0,):
@@ -112,8 +120,20 @@ def bonded_case(bank, nr, layers, patch=False):
             dv, dh = lined.closures(mesh, ug)
             row.update(closure_vertical_mm=dv, closure_horizontal_mm=dh, lambda_lower=max(0.0, 1 - 20.0 / row['compression_MPa']))
             rows.append(row)
+            fields[route, change] = ug
             profiles.extend(profile)
             print('Bonded', identity['case'], route, nt, change, row['compression_MPa'], row['lambda_lower'], flush=True)
+    for row in rows:
+        route, change = (row['operator'], row['thickness_change_m'])
+        reference = fields['cauchy_64', change]
+        boundary = reference[mesh.ring_dofs('outer')]
+        perturbation = (bank.work[route] - bank.work['cauchy_64']) @ boundary
+        row['exterior_force_difference_over_load'] = float(np.linalg.norm(perturbation) / np.linalg.norm(force))
+        row['displacement_difference_from_cauchy'] = float(np.linalg.norm(fields[route, change] - reference) / np.linalg.norm(reference))
+        if route == 'cauchy_64':
+            coefficients = 2 / nt * np.fft.rfft(boundary.reshape(nt, 2), axis=0)
+            for harmonic in range(1, nt // 2):
+                bank.traces.append(dict(case=row['case'], n_r=nr, **bank.identity, thickness_change_m=change, harmonic=harmonic, ux_cos_m=float(coefficients[harmonic, 0].real), ux_sin_m=float(-coefficients[harmonic, 0].imag), uy_cos_m=float(coefficients[harmonic, 1].real), uy_sin_m=float(-coefficients[harmonic, 1].imag)))
     return (rows, profiles)
 
 def plastic_case(bank, nr):
@@ -157,6 +177,7 @@ def main():
     parser.add_argument('--study', choices=('contact', 'thickness', 'bonded', 'plastic', 'all'), default='all')
     parser.add_argument('--output-prefix', type=Path, default=Path(__file__).resolve().parents[2] / 'results/data/derived/support_operator')
     parser.add_argument('--refined-spectral', action='store_true', help='Include the 384/2048, radius-0.97 spectral block in the bonded control')
+    parser.add_argument('--operators-only', action='store_true', help='Recompute operator resolution and energy without rerunning the FE histories')
     args = parser.parse_args()
     prefix = args.output_prefix
     start = time.perf_counter()
@@ -164,11 +185,13 @@ def main():
         for study in ('contact', 'thickness', 'bonded', 'plastic'):
             if args.study not in ('all', study):
                 continue
-            rows, profiles, operators, interfaces = ([], [], [], [])
+            rows, profiles, operators, interfaces, traces = ([], [], [], [], [])
             specs = {'contact': [(4.0, 45.0, 48, 256, 16), (1.25, 0.0, 48, 256, 16)], 'thickness': [(2.625, 45.0, 48, 256, 32)], 'bonded': [(1.25, 90.0, 24, 128, 16), (1.25, 90.0, 48, 256, 32)], 'plastic': [(4.0, 0.0, 48, 256, 16)]}[study]
             for ratio, dip, nr, nt, layers in specs:
                 bank = Operators(ratio, dip, nt, refined_spectral=args.refined_spectral and study == 'bonded')
                 operators.extend(bank.rows)
+                if args.operators_only:
+                    continue
                 if study == 'contact':
                     rr, pp, ii = contact_case(bank, nr)
                     interfaces.extend(ii)
@@ -178,7 +201,8 @@ def main():
                     rr, pp = bonded_case(bank, nr, layers, patch=study == 'thickness')
                 rows.extend(rr)
                 profiles.extend(pp)
-            for suffix, data in ((study, rows), (study + '_profiles', profiles), (study + '_operators', operators), (study + '_interface', interfaces)):
+                traces.extend(bank.traces)
+            for suffix, data in ((study, rows), (study + '_profiles', profiles), (study + '_operators', operators), (study + '_interface', interfaces), (study + '_traces', traces)):
                 if data:
                     fields = list(dict.fromkeys((k for row in data for k in row)))
                     data = [{key: row.get(key, '') for key in fields} for row in data]

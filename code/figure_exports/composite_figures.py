@@ -340,233 +340,25 @@ def draw_friction():
     return (fig, {'material_ratio': 4, 'bedding_dip_deg': 45, 'source_action_rows': len(actions), 'source_contact_rows': len(contact), 'pressure_range_MPa': [finite.minimum_pressure_MPa.min(), finite.maximum_pressure_MPa.max()], 'test_normal_stress_MPa': [0.5, 1.5]})
 
 def draw_density():
-    records, checks = method.density_data()
-    frame = pd.DataFrame(records)
-    fig = fs.figure(WIDTH, 55)
-    vals = frame.R_traction_x_over_Ev_u0.to_numpy()
-    artists = []
-    norm = colors.TwoSlopeNorm(vmin=vals.min(), vcenter=0, vmax=vals.max())
-    spectrum = colors.LinearSegmentedColormap.from_list('abaqus_rainbow', ['#0000ff', '#00ffff', '#00ff00', '#ffff00', '#ff0000'])
-    jac = axis(fig, 52, 22, 20, 19)
-    for j, c1 in enumerate((0, 0.3)):
-        part = frame[frame.c1 == c1]
-        ax = axis(fig, 23 * j, 22, 22, 19, diagram=True)
-        ax.fill(part.x_over_R, part.y_over_R, color='#eeeeee')
-        ax.plot(part.x_over_R, part.y_over_R, color=INK, lw=1, ls='-')
-        xy = 0.72 * part[['x_over_R', 'y_over_R']].to_numpy()
-        lc = LineCollection(np.stack((xy[:-1], xy[1:]), axis=1), cmap=spectrum, norm=norm, linewidths=2.2, zorder=2)
-        lc.set_array(part.R_traction_x_over_Ev_u0.to_numpy()[:-1])
-        ax.add_collection(lc)
-        artists.append(lc)
-        sampled = part.iloc[:-1:80]
-        ux = 0.55 * np.cos(3 * np.deg2rad(sampled.theta_deg))
-        ax.quiver(sampled.x_over_R, sampled.y_over_R, ux, np.zeros(len(ux)), color=BLUE, angles='xy', scale_units='xy', scale=1, width=0.02, headwidth=3.2, headlength=2.6, headaxislength=2.4, zorder=3)
-        ax.set(aspect='equal', xlim=(-1.9, 1.9), ylim=(-1.4, 1.4))
-        panel(fig, 1 + 23 * j, 50, chr(97 + j), 'Circle' if j == 0 else 'Ellipse')
-        label(fig, 11 + 23 * j, 44, f'$c_1={c1:g}$', ha='center', fontsize=7)
-        jac.plot(part.theta_deg, part.jacobian_over_R, color=INK if j == 0 else BLUE, ls='-' if j == 0 else '--', lw=1)
-    panel(fig, 48, 50, 'c', 'Jacobian')
-    label(fig, 62, 44, "$|\\omega'|/R$", ha='center', fontsize=7)
-    jac.set(xlim=(0, 360), xticks=[0, 180, 360], ylim=(0.6, 1.4), yticks=[0.7, 1, 1.3], xlabel='$\\theta$ (deg)')
-    jac.xaxis.label.set_size(7)
-    label(fig, 22.5, 15, '$u_x=u_0\\cos3\\theta,\\quad u_y=0$', ha='center', fontsize=7)
-    bar = shared_bar(fig, artists, 4, 4, 37, 'Inner ring: $Rt_x/(E_vu_0)$', [vals.min(), 0, vals.max()])
-    bar.ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: f'{v:.1f}'))
-    for i, (kind, title) in enumerate([('density', 'Density'), ('traction', 'Traction')]):
-        ax = axis(fig, 82 + 30 * i, 22, 22, 19)
-        for c1, ls in [(0, '-'), (0.3, '--')]:
-            part = frame[frame.c1 == c1]
-            for component, col in [('x', INK), ('y', RED)]:
-                key = f'density_{component}_over_Ev_u0' if kind == 'density' else f'R_traction_{component}_over_Ev_u0'
-                ax.plot(part.theta_deg, part[key], color=col, ls=ls, lw=1.7 if c1 == 0 else 0.85, alpha=0.35 if c1 == 0 else 1)
-        ax.set(xlim=(0, 360), xticks=[0, 180, 360], ylim=(-4.5, 4.5), yticks=[-4, 0, 4], xlabel='$\\theta$ (deg)')
-        panel(fig, 78 + 30 * i, 50, chr(100 + i), title)
-        label(fig, 93 + 30 * i, 44, '$(dF/d\\theta)/(E_vu_0)$' if kind == 'density' else '$Rt/(E_vu_0)$', ha='center', fontsize=7)
-        ax.xaxis.label.set_size(7)
-    fig.legend(handles=[Line2D([], [], color=INK, label='$x$'), Line2D([], [], color=RED, label='$y$'), Line2D([], [], color='#777777', label='Circle'), Line2D([], [], color='#777777', ls='--', label='Ellipse')], loc='lower center', bbox_to_anchor=(94 / WIDTH, 0.015), ncol=4, fontsize=7, frameon=False)
-    return (fig, checks)
+    from density_overview import draw_density as draw_density_overview
+    return draw_density_overview(WIDTH, HEIGHTS['density-invariance'], LABELS)
 
 def draw_sampling():
-    rows, checks = method.branch_geometry(SPEC)
-    data = pd.DataFrame(rows)
-    theta = np.linspace(0, 2 * np.pi, 721)
-    angles = 2 * np.pi * (np.arange(24) + 0.31) / 24
-    fig = fs.figure(WIDTH, 34)
-    for k, col, x in [(1, BLUE, 4), (2, RED, 49)]:
-        facts = checks['branches'][k - 1]
-        eta = facts['eta']
-        critical = facts['fold_radius']
-        left = axis(fig, x, 11, 16, 16)
-        right = axis(fig, x + 22, 11, 16, 16)
-        left.add_patch(Circle((0, 0), 1, fc='#f7f7f7', ec=INK, lw=0.7))
-        left.add_patch(Circle((0, 0), critical, fc='#e7e7e7', ec='#777777', lw=0.5, ls=':'))
-        roots = data[(data.branch == k) & (data.kind == 'critical')]
-        left.plot(roots.real, roots.imag, 'x', color='#777777', ms=2, mew=0.55)
-        left.plot(eta * np.cos(theta), eta * np.sin(theta), color=col, lw=0.65, ls='-')
-        left.plot(eta * np.cos(angles), eta * np.sin(angles), 'o', color=col, ms=1.7)
-        series = method.branch_series(complex(*facts['root']), SPEC)
-        for radius in np.linspace(eta, 1, 4):
-            curve = method.eval_series(series, radius * np.exp(1j * theta))
-            right.plot(curve.real, curve.imag, color=col, lw=0.4, alpha=0.6, ls='-')
-        for a in angles[::2]:
-            curve = method.eval_series(series, np.linspace(eta, 1, 70) * np.exp(1j * a))
-            right.plot(curve.real, curve.imag, color=col, lw=0.35, alpha=0.6, ls='-')
-        boundary = data[(data.branch == k) & (data.kind == 'boundary')]
-        points = data[(data.branch == k) & (data.kind == 'test')]
-        right.plot(boundary.real, boundary.imag, color=INK, lw=0.7, ls='-')
-        right.plot(points.real, points.imag, 'o', color=col, ms=1.8)
-        left.plot(eta * np.cos(angles[3]), eta * np.sin(angles[3]), 's', color=INK, mfc='white', ms=3, mew=0.7)
-        right.plot(points.iloc[3].real, points.iloc[3].imag, 's', color=INK, mfc='white', ms=3, mew=0.7)
-        for ax in (left, right):
-            ax.set(aspect='equal', xlim=(-1.3, 1.3), ylim=(-1.3, 1.3), xticks=[-1, 0, 1], yticks=[-1, 0, 1])
-        label(fig, x - 3, 29.5, f'({chr(95 + 2 * k)}) Ring {k} ($\\sigma$)', fontsize=7.5)
-        label(fig, x + 19, 29.5, f'({chr(96 + 2 * k)}) Image $z_{k}/R$', fontsize=7.5)
-        label(fig, x + 19, 2.5, f'$z_{k}(\\sigma):\\;r_{k}={critical:.3f},\\;\\eta_{k}={eta:.3f}$', ha='center', fontsize=7, color=col)
-        fig.add_artist(ConnectionPatch((1.04, 0.7), (-0.08, 0.7), 'axes fraction', 'axes fraction', axesA=left, axesB=right, arrowstyle='-|>', color=col, lw=0.8, mutation_scale=7))
-    series = method.branch_series(complex(*checks['branches'][0]['root']), SPEC)
-    target = data[(data.branch == 1) & (data.kind == 'test')].iloc[3]
-    lo, hi = (min(series), max(series))
-    poly = np.array([series.get(j, 0) for j in range(lo, hi + 1)], complex)
-    poly[-lo] -= complex(target.real, target.imag)
-    preimages = np.roots(poly[::-1])
-    radii = np.sort(abs(preimages))
-    ax = axis(fig, 94, 11, 18, 16)
-    ax.semilogy(np.arange(1, len(radii) + 1), radii, 'o', color=INK, mfc='white', ms=1.8, mew=0.65)
-    ax.axhline(1, color=BLUE, lw=0.8, ls='--')
-    ax.set(xlim=(0.3, len(radii) + 0.7), ylim=(0.4, 3), xticks=[1, 10, 18], yticks=[0.5, 1, 2], xlabel='Index')
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, p: f'{v:g}'))
-    ax.yaxis.set_minor_formatter(NullFormatter())
-    ax.yaxis.set_minor_locator(NullLocator())
-    ax.xaxis.label.set_size(7)
-    label(fig, 90, 29.5, '(e) Preimages $|\\sigma_r|$', fontsize=7.5)
-    label(fig, 113, 29.5, '(f) Projection $Q\\mathbf{1}=0$', fontsize=7.5)
-    diag = axis(fig, 115, 7, 20, 24, diagram=True)
-    diag.set(xlim=(0, 20), ylim=(0, 24))
-    schematic_grid(diag, 0, 14, 8, 4, 4, 8, '#c4d0df', name='$k=1$')
-    schematic_grid(diag, 0, 4, 8, 4, 4, 8, '#e4b5b2', name='$k=2$')
-    for text in diag.texts:
-        text.set_fontsize(7)
-    arrow(diag, (9, 13), (14, 13))
-    diag.text(16, 10, '$4n_c$' + '\nreal\nrows', ha='center', fontsize=7)
-    checks['displayed_preimage_radii'] = radii.tolist()
-    checks['preimage_inside_count'] = int((radii < 1).sum())
-    return (fig, checks)
+    from sampling_overview import draw_sampling as draw_overview
+    return draw_overview(SPEC, WIDTH, HEIGHTS['analyticity-sampling'], LABELS)
 
 def draw_kernels():
-    data = read('closed_kernel_ladder.csv')
-    fig = fs.figure(WIDTH, 46)
-    a = axis(fig, 1, 15, 20, 20, diagram=True)
-    b = axis(fig, 24, 15, 20, 20, diagram=True)
-    for t, col, ls in [(0, '#999999', ':'), (0.25, INK, '-'), (0.5, RED, '--'), (1, BLUE, '-')]:
-        spec = {'geometry': {**SPEC['geometry'], 'coefficients': [t * c for c in SPEC['geometry']['coefficients']]}}
-        xy = outline(spec)
-        a.plot(*xy.T, color=col, lw=0.8, ls=ls, label=f'{t:g}')
-    a.set(aspect='equal', xlim=(-6.5, 6.5), ylim=(-6.5, 6.5))
-    for rho, col, ls in [(1, INK, '-'), (1.5, RED, '--'), (2, BLUE, '-')]:
-        ring(b, rho, color=col, lw=0.8, ls=ls, label=f'{rho:g}')
-    b.set(aspect='equal', xlim=(-11, 11), ylim=(-11, 11))
-    label(fig, 1, 41, '(a) Shape $t$', fontsize=7.5)
-    label(fig, 24, 41, '(b) Interfaces $\\rho$', fontsize=7.5)
-    a.legend(loc='upper center', bbox_to_anchor=(0.5, -0.01), ncol=2, fontsize=7, frameon=False, handlelength=0.9, handletextpad=0.35, columnspacing=0.7, labelspacing=0.25, borderaxespad=0.2)
-    b.legend(loc='upper center', bbox_to_anchor=(0.5, -0.01), ncol=3, fontsize=7, frameon=False, handlelength=0.9, handletextpad=0.35, columnspacing=0.7, borderaxespad=0.2)
-    ax = axis(fig, 52, 10, 30, 26)
-    wall = data[data.rho_out == 1]
-    for key, col, marker, title in [('rel0', INK, 'o', '0th'), ('rel1', RED, 's', '1st'), ('rel2', BLUE, '^', '2nd')]:
-        group = wall.groupby('t')[key]
-        ax.fill_between(group.min().index, group.min(), group.max(), color=col, alpha=0.12, lw=0)
-        ax.loglog(group.max().index, group.max(), color=col, marker=marker, mfc='white', ms=2.5, lw=0.9, label=title)
-    ax.set(xlim=(0.22, 1.12), ylim=(7e-07, 0.03), xticks=[0.25, 0.5, 1], xticklabels=['0.25', '0.5', '1'], yticks=[1e-06, 1e-05, 0.0001, 0.001, 0.01], xlabel='Mapping strength $t$')
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, p: f'{v:.0e}'))
-    ax.xaxis.set_minor_formatter(NullFormatter())
-    ax.yaxis.set_minor_formatter(NullFormatter())
-    ax.xaxis.set_minor_locator(NullLocator())
-    ax.yaxis.set_minor_locator(NullLocator())
-    ax.xaxis.label.set_size(7)
-    ax.legend(loc='lower right', fontsize=7, frameon=False, handlelength=1.05, handletextpad=0.4, labelspacing=0.25, borderaxespad=0.2)
-    label(fig, 46, 41, '(c) Operator error ($\\rho=1$)', fontsize=7.5)
-    label(fig, 87, 41, '(d) 2nd-order error ($t=1$)', fontsize=7.5)
-    table = np.array([[data[(data.material == m) & (data.rho_out == rho) & (data.t == 1)].rel2.iloc[0] for rho in (1, 1.5, 2)] for m in method.MATERIALS])
-    ax = axis(fig, 104, 10, 30, 25)
-    im = ax.imshow(table, cmap='viridis_r', norm=colors.LogNorm(table.min(), table.max()), aspect='auto')
-    for (i, j), v in np.ndenumerate(table):
-        ax.text(j, i, f'{v:.1e}', ha='center', va='center', fontsize=7, color='white' if im.norm(v) > 0.6 else INK, linespacing=1.2)
-    ax.set(xticks=[0, 1, 2], xticklabels=['$\\rho=1$', '$\\rho=1.5$', '$\\rho=2$'], yticks=np.arange(5), yticklabels=['(1.5, 90°)', '(3, 45°)', '(2, 60°)', 'Queenston', 'Waichecheng'])
-    ax.tick_params(length=0, pad=3, labelsize=7)
-    ax.tick_params(axis='x', labeltop=True, labelbottom=False, pad=2)
-    label(fig, 94, 36.3, 'Material', ha='center', fontsize=7)
-    bar = fig.colorbar(im, cax=axes_mm(fig, 104, 5, 30, 2), orientation='horizontal', ticks=[1e-08, 1e-06, 0.0001])
-    bar.ax.set_label('<colorbar>')
-    bar.ax.tick_params(labelsize=7, pad=1)
-    bar.ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: f'{v:.0e}'))
-    bar.ax.xaxis.set_minor_formatter(NullFormatter())
-    bar.ax.xaxis.set_minor_locator(NullLocator())
-    return (fig, {'data_rows': len(data), 'full_strength_errors': table.tolist(), 'reference_line_removed': 'Unmotivated 1e-3 target'})
+    from kernel_overview import draw_kernels as draw_overview
+    return draw_overview(SPEC, WIDTH, HEIGHTS['kernel-validity'], LABELS)
 
 def draw_exterior():
-    import fig_dj18_exterior_cost as cost
-    fig = fs.figure(WIDTH, 94)
-    near = axis(fig, 2, 62, 25, 25, diagram=True)
-    far = axis(fig, 32, 62, 25, 25, diagram=True)
-    mesh(near, 2, nr=12, nt=64)
-    ring(near, color=INK, lw=0.9, ls='-')
-    ring(near, 2, color=BLUE, lw=1.2, ls='-')
-    near.set(aspect='equal', xlim=(-12, 12), ylim=(-11, 11))
-    mesh(far, 32, nr=60, nt=64)
-    ring(far, color=INK, lw=0.8, ls='-')
-    ring(far, 32, color=RED, lw=1, ls='-')
-    far.add_patch(Rectangle((-11, -11), 22, 22, fc='none', ec=BLUE, lw=0.9))
-    far.set(aspect='equal', xlim=(-170, 170), ylim=(-170, 170))
-    label(fig, 1, 91, '(a) Coupled, $\\rho=2$', fontsize=7.5)
-    label(fig, 31, 91, '(b) Meshed, $\\rho_{\\mathrm{far}}=32$', fontsize=7.5)
-    label(fig, 14.5, 58, '1,664 DOFs', ha='center', fontsize=7)
-    label(fig, 44.5, 58, '7,808 DOFs', ha='center', fontsize=7)
-    label(fig, 29.5, 53, 'Shared $12\\times64$ near mesh', ha='center', fontsize=7)
-    errors = read('near_field_interface_error_hs100.csv')
-    errors = choose(errors, 2.625, 45)
-    wall = outline(SPEC)
-    levels = np.linspace(0, errors.abs_diff_um.max(), 13)
-    artists = []
-    for j, rho in enumerate((2, 1.5)):
-        ax = axis(fig, 74 + 34 * j, 62, 26.5, 26.5)
-        artists.append(field_panel(ax, errors[errors.rho_out == rho], 'abs_diff_um', wall, levels))
-        ax.tick_params(labelsize=7, pad=1)
-        ax.set_xlabel('$x$ (m)', fontsize=7, labelpad=1)
-        if j == 0:
-            ax.set_ylabel('$y$ (m)', fontsize=7, labelpad=1)
-        else:
-            ax.set_yticklabels([])
-        label(fig, 68 + 34 * j, 91, f'({chr(99 + j)}) Difference, $\\rho={rho:g}$', fontsize=7.5)
-    bar = fig.colorbar(artists[0], cax=axes_mm(fig, 80, 52, 53, 2.2), orientation='horizontal', ticks=[0, 8, 16, levels[-1]])
-    bar.ax.set_label('<colorbar>')
-    bar.ax.tick_params(labelsize=7, pad=1)
-    bar.ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: f'{v:.2f}' if v == levels[-1] else f'{v:g}'))
-    artists[1].colorbar = bar
-    label(fig, 77, 53.1, '$|\\Delta u|$ (μm)', ha='right', va='center', fontsize=7)
-    a = axis(fig, 14, 10, 48, 28)
-    b = axis(fig, 85, 10, 48, 28)
-    cost.panel_ladder(a, cost.load(cost.SRC_REF))
-    cost.panel_cost(b, cost.load(cost.SRC_COST))
-    for ax in (a, b):
-        fs.style_axes(ax, minor=False)
-        ax.tick_params(labelsize=7)
-        ax.xaxis.label.set_size(7)
-        ax.yaxis.label.set_size(7)
-        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, p: f'{v:.0e}'))
-    a.set_xlabel('Near-field mesh', fontsize=7, labelpad=1.5)
-    a.set_ylabel('Relative difference', fontsize=7, labelpad=2)
-    b.set_xlabel('Displacement DOFs', fontsize=7, labelpad=1.5)
-    b.set_ylabel('Relative error', fontsize=7, labelpad=2)
-    label(fig, 14, 41, '$E_h/E_v$:', va='center', fontsize=7)
-    a.legend(handles=a.lines[1:], labels=['1.25', '2.625', '4'], ncol=3, loc='lower left', bbox_to_anchor=(0.28, 1.02), borderaxespad=0, fontsize=7, frameon=False, handlelength=1.2, handletextpad=0.35, columnspacing=0.8)
-    b.set_yticks([0.001, 0.01, 0.1, 1])
-    b.legend(handles=[Line2D([], [], color=col, ls=ls, label=text) for col, ls, text in [(INK, '-', 'DtN–FEM'), (RED, '--', 'Free'), (BLUE, ':', 'Clamped')]], ncol=3, loc='lower left', bbox_to_anchor=(0, 1.02), borderaxespad=0, fontsize=7, frameon=False, handlelength=1.1, handletextpad=0.35, columnspacing=0.8)
-    label(fig, 2, 46.5, '(e) Mesh convergence, $\\rho=2$', fontsize=7.5)
-    label(fig, 73, 46.5, '(f) Accuracy vs. model size', fontsize=7.5)
-    from matplotlib.text import Text
-    for text in fig.findobj(Text):
-        text.set_fontsize(max(7, text.get_fontsize()))
-    return (fig, {'error_material': [2.625, 45], 'field_radii': [2, 1.5], 'error_range_um': [float(errors.abs_diff_um.min()), float(errors.abs_diff_um.max())], 'error_alignment': 'mean translation only; near_field_clouds.py', 'near_mesh': '24x128 for fields; 12x64 base for cost'})
-DRAWERS = {'domain-coupling': draw_domain, 'excavation-response': lambda: draw_atlas('stress'), 'displacement-response': lambda: draw_atlas('displacement'), 'lined-section-demo': draw_lining, 'frictional-contact': draw_friction, 'density-invariance': draw_density, 'analyticity-sampling': draw_sampling, 'kernel-validity': draw_kernels, 'exterior-cost': draw_exterior}
+    from exterior_overview import draw_exterior as draw_overview
+    return draw_overview(SPEC, WIDTH, HEIGHTS['exterior-cost'], LABELS)
+
+def draw_displacement_measurement():
+    from displacement_measurement import draw_displacement
+    return draw_displacement(WIDTH, HEIGHTS['displacement-measurement'], LABELS)
+DRAWERS = {'domain-coupling': draw_domain, 'excavation-response': lambda: draw_atlas('stress'), 'displacement-response': lambda: draw_atlas('displacement'), 'lined-section-demo': draw_lining, 'frictional-contact': draw_friction, 'density-invariance': draw_density, 'analyticity-sampling': draw_sampling, 'kernel-validity': draw_kernels, 'exterior-cost': draw_exterior, 'displacement-measurement': draw_displacement_measurement}
 STEMS = {'domain-coupling': 'domain_coupling', 'lined-section-demo': 'lined_demo'}
 
 def finalize_svg(pdf, report):
@@ -591,7 +383,8 @@ def main():
         fig.set_size_inches(WIDTH / 25.4, HEIGHTS[job] / 25.4)
         out = ROOT / 'figures' / job / (STEMS.get(job, job.replace('-', '_')) + '.pdf')
         preview = args.preview_dir / (job + '.png') if args.preview_dir else None
-        report = fs.save(fig, out, size_mm=fig.get_size_inches() * 25.4, preview_path=preview)
+        entry = next((entry for entry in SPEC['figures'] if entry['display_job_id'] == job))
+        report = fs.save(fig, out, size_mm=fig.get_size_inches() * 25.4, preview_path=preview, spec={'series_colors': entry.get('series_colors', [])})
         finalize_svg(out, report)
         plt.close(fig)
         print(job, report['ok'], flush=True)
