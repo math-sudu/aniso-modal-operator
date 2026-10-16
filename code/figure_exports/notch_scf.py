@@ -5,8 +5,11 @@ import importlib
 from pathlib import Path
 import gmsh
 import numpy as np
+import scipy.sparse as sp
+from scipy.sparse.linalg import spsolve
 from threadpoolctl import threadpool_limits
 hole = importlib.import_module('orthotropic_hole')
+from exterior_operator import assemble_modal, projected_work
 HERE = Path(__file__).resolve().parents[2] / 'results/data/derived'
 
 def wall_points(width, height, radius, shape, refinement):
@@ -64,7 +67,122 @@ def mesh(observation, kind, refinement):
     finally:
         gmsh.finalize()
 
-def assess(refinement, harmonics, selected):
+def quadratic_mesh(data):
+    """Add shared straight-edge midpoints without changing the P1 geometry."""
+    xy, cells, outer, wall, section = data
+    edges, inverse = np.unique(np.sort(cells[:, [[0, 1], [1, 2], [2, 0]]], axis=2).reshape(-1, 2), axis=0, return_inverse=True)
+    mids = len(xy) + np.arange(len(edges))
+    return (np.vstack((xy, xy[edges].mean(axis=1))), np.c_[cells, mids[inverse].reshape(-1, 3)], outer, wall, section)
+
+def strain_matrix(grad, barycentric, order):
+    if order == 1:
+        derivatives = grad
+    else:
+        local = np.asarray(barycentric)
+        vertex = (4 * local - 1)[None, :, None] * grad
+        edge = 4 * (local[[0, 1, 2]][None, :, None] * grad[:, [1, 2, 0]] + local[[1, 2, 0]][None, :, None] * grad[:, [0, 1, 2]])
+        derivatives = np.concatenate((vertex, edge), axis=1)
+    b = np.zeros((len(grad), 3, 2 * derivatives.shape[1]))
+    b[:, 0, 0::2], b[:, 1, 1::2] = (derivatives[:, :, 0], derivatives[:, :, 1])
+    b[:, 2, 0::2], b[:, 2, 1::2] = (derivatives[:, :, 1], derivatives[:, :, 0])
+    return b
+
+def boundary_edges(cells, nodes):
+    """Cell and local-edge indices in the order of a supplied vertex loop."""
+    sides = cells[:, [[0, 1], [1, 2], [2, 0]]]
+    touching = np.all(np.isin(sides, nodes), axis=2)
+    elements, local = np.where(touching)
+    lookup = {tuple(sorted(pair)): (e, j) for pair, e, j in zip(sides[touching], elements, local)}
+    return np.array([lookup[tuple(sorted((a, b)))] for a, b in zip(nodes, np.roll(nodes, -1))]).T
+
+def solve(data, mat, kind, sigma, harmonics, order):
+    """P1/P2 elasticity, with a P1 trace restriction on the DtN interface."""
+    if order == 2:
+        data = quadratic_mesh(data)
+    xy, cells, outer, wall, section = data
+    b1, area, _ = hole.base.cst(xy, cells[:, :3])
+    grad = np.stack((b1[:, 0, 0::2], b1[:, 1, 1::2]), axis=2)
+    dofs = (2 * cells[:, :, None] + [0, 1]).reshape(len(cells), -1)
+    nd, ed = (2 * len(xy), dofs.shape[1])
+    ke = np.zeros((len(cells), ed, ed))
+    for point in ((2 / 3, 1 / 6, 1 / 6), (1 / 6, 2 / 3, 1 / 6), (1 / 6, 1 / 6, 2 / 3)):
+        b = strain_matrix(grad, point, order)
+        ke += np.einsum('eai,ab,ebj,e->eij', b, mat.stiffness, b, area / 3)
+    k = sp.coo_matrix((ke.ravel(), (np.repeat(dofs, ed, axis=1).ravel(), np.tile(dofs, (1, ed)).ravel())), shape=(nd, nd)).tocsc()
+    del ke
+    f = np.zeros(nd)
+    affine = np.zeros_like(xy)
+    stress = np.diag([0.0, sigma])
+    load_nodes = wall if kind == 'infinite' else outer
+    elements, local = boundary_edges(cells, load_nodes)
+    for a, z, e, j in zip(load_nodes, np.roll(load_nodes, -1), elements, local):
+        dx, dy = xy[z] - xy[a]
+        load = stress @ np.array([dy, -dx])
+        if kind == 'fixed' and (not np.isclose(xy[[a, z], 1], 125.0).all()):
+            continue
+        if order == 1:
+            for node in (a, z):
+                f[2 * node:2 * node + 2] += load / 2
+        else:
+            for node, weight in ((a, 1 / 6), (z, 1 / 6), (cells[e, 3 + j], 2 / 3)):
+                f[2 * node:2 * node + 2] += weight * load
+    transform = sp.eye(nd, format='csc')
+    if kind == 'infinite':
+        theta = np.arange(len(outer)) * 2 * np.pi / len(outer)
+        kd = -projected_work(assemble_modal(mat, section, harmonics), theta)
+        od = (2 * outer[:, None] + [0, 1]).ravel()
+        k += sp.coo_matrix((kd.ravel(), (np.repeat(od, len(od)), np.tile(od, len(od)))), shape=(nd, nd)).tocsc()
+        strain = mat.compliance @ np.array([0.0, sigma, 0.0])
+        affine = xy @ np.array([[strain[0], strain[2] / 2], [strain[2] / 2, strain[1]]])
+        if order == 2:
+            oe, oj = boundary_edges(cells, outer)
+            md = (2 * cells[oe, 3 + oj][:, None] + [0, 1]).ravel()
+            keep = np.setdiff1d(np.arange(nd), md)
+            columns = np.full(nd, -1)
+            columns[keep] = np.arange(len(keep))
+            following = (2 * np.roll(outer, -1)[:, None] + [0, 1]).ravel()
+            transform = sp.coo_matrix((np.r_[np.ones(len(keep)), np.full(2 * len(md), 0.5)], (np.r_[keep, md, md], np.r_[columns[keep], columns[od], columns[following]])), shape=(nd, len(keep))).tocsc()
+    if kind == 'fixed':
+        bottom = np.flatnonzero(np.isclose(xy[:, 1], -125.0))
+        free = np.setdiff1d(np.arange(nd), (2 * bottom[:, None] + [0, 1]).ravel())
+        transform = transform[:, free]
+        system, rhs = (transform.T @ k @ transform, transform.T @ f)
+    else:
+        constraints = np.zeros((nd, 2 if kind == 'infinite' else 3))
+        if kind == 'infinite':
+            constraints[2 * outer[0], 0] = constraints[2 * outer[0] + 1, 1] = 1.0
+        else:
+            constraints[0::2, 0], constraints[1::2, 1] = (1.0, 1.0)
+            constraints[0::2, 2], constraints[1::2, 2] = (-xy[:, 1], xy[:, 0])
+        constraints /= np.linalg.norm(constraints, axis=0)
+        c = sp.csc_matrix(transform.T @ constraints)
+        system = sp.bmat([[transform.T @ k @ transform, c], [c.T, None]], format='csc')
+        rhs = np.r_[transform.T @ f, np.zeros(c.shape[1])]
+    result = spsolve(system.tocsc(), rhs)
+    residual = np.linalg.norm(system @ result - rhs) / np.linalg.norm(rhs)
+    if not np.isfinite(residual) or residual > 1e-08:
+        raise RuntimeError(f'Equilibrium failure: {residual}')
+    u = (transform @ result[:transform.shape[1]]).reshape(-1, 2) + affine
+    values = u.ravel()[dofs]
+    we, wj = boundary_edges(cells, wall)
+    center_stress = np.einsum('ab,ebi,ei->ea', mat.stiffness, strain_matrix(grad[we], (1 / 3,) * 3, order), values[we])
+    edge_stress = np.zeros((len(we), 3))
+    for j, pair in enumerate(((0, 1), (1, 2), (2, 0))):
+        selected = wj == j
+        bary = np.zeros(3)
+        bary[list(pair)] = 0.5
+        edge_stress[selected] = np.einsum('ab,ebi,ei->ea', mat.stiffness, strain_matrix(grad[we[selected]], bary, order), values[we[selected]])
+    sums, weights = (np.zeros((len(xy), 3)), np.zeros(len(xy)))
+    adjacent = np.any(np.isin(cells[:, :3], wall), axis=1)
+    for j in range(3):
+        stresses = np.einsum('ab,ebi,ei->ea', mat.stiffness, strain_matrix(grad[adjacent], np.eye(3)[j], order), values[adjacent])
+        np.add.at(sums, cells[adjacent, j], area[adjacent, None] * stresses)
+        np.add.at(weights, cells[adjacent, j], area[adjacent])
+    peak = np.argmax(edge_stress[:, 1])
+    point = xy[[wall[peak], np.roll(wall, -1)[peak]]].mean(axis=0)
+    return dict(axial_scf=edge_stress[peak, 1] / sigma, hoop_scf=np.max(edge_stress[:, 0] + edge_stress[:, 1]) / sigma, centroid_scf=center_stress[:, 1].max() / sigma, recovered_node_scf=np.max(sums[wall, 1] / weights[wall]) / sigma, peak_x_mm=point[0], peak_y_mm=point[1], vertices=len(xy), triangles=len(cells), residual=residual)
+
+def assess(refinement, harmonics, selected, order=2, boundaries=('fixed', 'infinite'), output=None):
     with (HERE / 'khechai2018_table3.csv').open(encoding='utf-8', newline='') as stream:
         observations = list(csv.DictReader(stream))
     mat = hole.material(22540.0, 10940.0, 3540.0, 0.3)
@@ -72,23 +190,49 @@ def assess(refinement, harmonics, selected):
     for i, ob in enumerate(observations):
         if selected and i not in selected:
             continue
-        for kind in ('traction', 'infinite'):
+        for kind in boundaries:
             data = mesh(ob, kind, refinement)
-            u, stresses, info = hole.solve(data, mat, kind, 10.0, harmonics)
-            xy, cells, _, wall, _ = data
-            touching = np.sum(np.isin(cells, wall), axis=1) == 2
-            edge_cells, edge_stresses = (cells[touching], stresses[touching])
-            axial_index = np.argmax(edge_stresses[:, 1])
-            centers = xy[edge_cells].mean(axis=1)
-            axial = edge_stresses[axial_index, 1] / 10.0
-            hoop = np.max(edge_stresses[:, 0] + edge_stresses[:, 1]) / 10.0
-            row = dict(**ob, boundary=kind, refinement=refinement, harmonics=harmonics if kind == 'infinite' else 0, axial_scf=axial, hoop_scf=hoop, peak_x_mm=centers[axial_index, 0], peak_y_mm=centers[axial_index, 1], relative_difference=axial / float(ob['observed_scf']) - 1, **info)
+            info = solve(data, mat, kind, 10.0, harmonics, order)
+            row = dict(**ob, boundary=kind, refinement=refinement, element_order=order, harmonics=harmonics if kind == 'infinite' else 0, relative_difference=info['axial_scf'] / float(ob['observed_scf']) - 1, source_fem_difference=info['axial_scf'] / float(ob['source_fem_scf']) - 1, **info)
             rows.append(row)
             print(row, flush=True)
     suffix = '_refined' if refinement == 2 else ''
     if selected:
         suffix += '_selected'
-    hole.write_rows(HERE / f'khechai2018_notch_forward{suffix}.csv', rows)
+    hole.write_rows(output or HERE / f'khechai2018_notch_forward{suffix}.csv', rows)
+
+def check_elements():
+    """Check exact quadratic strains, not just the solved linear system."""
+    xy = np.array([[0.0, 0.0], [2.0, 0.2], [0.1, 1.3]])
+    cells = np.array([[0, 1, 2]])
+    mesh2 = quadratic_mesh((xy, cells, np.arange(3), np.arange(3), None))
+    b, _, _ = hole.base.cst(xy, cells)
+    grad = np.stack((b[:, 0, 0::2], b[:, 1, 1::2]), axis=2)
+    x, y = mesh2[0].T
+    u = np.c_[2 * x * x + 3 * x * y - y * y, x * x - 2 * x * y + 4 * y * y]
+    for point in ((1 / 3,) * 3, (0.1, 0.3, 0.6), (0.0, 0.5, 0.5)):
+        xp, yp = np.asarray(point) @ xy
+        actual = strain_matrix(grad, point, 2) @ u[mesh2[1]].reshape(1, -1, 1)
+        expected = [4 * xp + 3 * yp, -2 * xp + 8 * yp, 5 * xp - 4 * yp]
+        np.testing.assert_allclose(actual.ravel(), expected, atol=4e-14)
+    print('Quadratic displacement/strain reproduction passed.')
+
+def protocol():
+    """Separate boundary, polynomial-order and recovery effects on two holes."""
+    with (HERE / 'khechai2018_table3.csv').open(encoding='utf-8', newline='') as stream:
+        observations = list(csv.DictReader(stream))
+    mat = hole.material(22540.0, 10940.0, 3540.0, 0.3)
+    rows = []
+    for refinement, order in ((1, 2), (2, 1), (2, 2)):
+        for i in (5, 11):
+            ob = observations[i]
+            data = mesh(ob, 'fixed', refinement)
+            for kind in ('fixed', 'traction'):
+                info = solve(data, mat, kind, 10.0, 0, order)
+                row = dict(**ob, boundary=kind, refinement=refinement, element_order=order, harmonics=0, relative_difference=info['axial_scf'] / float(ob['observed_scf']) - 1, source_fem_difference=info['axial_scf'] / float(ob['source_fem_scf']) - 1, **info)
+                rows.append(row)
+                print(row, flush=True)
+    hole.write_rows(HERE / 'khechai2018_notch_protocol.csv', rows)
 
 def assess_saved():
 
@@ -100,7 +244,7 @@ def assess_saved():
     keys = ('shape', 'width_mm', 'height_mm', 'boundary', 'observed_scf')
     assert len(coarse) == len(fine) == 24
     assert [tuple((r[k] for k in keys)) for r in coarse] == [tuple((r[k] for k in keys)) for r in fine]
-    for boundary in ('traction', 'infinite'):
+    for boundary in ('fixed', 'infinite'):
         selected = [(a, b) for a, b in zip(coarse, fine) if b['boundary'] == boundary and b['shape'] != 'circle']
         differences = [float(b['relative_difference']) for _, b in selected]
         mesh_change = max((abs(float(b['axial_scf']) / float(a['axial_scf']) - 1) for a, b in selected))
@@ -115,15 +259,27 @@ def assess_saved():
     exact = (stress['s_yy'] + 10.0).max() / 10.0
     circle = [float(r['axial_scf']) for r in fine if r['shape'] == 'circle' and r['boundary'] == 'infinite']
     print('exact infinite circular SCF', exact, 'refined differences', np.asarray(circle) / exact - 1)
+    for boundary in ('fixed', 'infinite'):
+        rows = [r for r in fine if r['boundary'] == boundary and r['shape'] != 'circle']
+        print(boundary, 'source FEM differences', [float(r['source_fem_difference']) for r in rows])
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--refinement', type=int, choices=(1, 2), default=1)
     parser.add_argument('--harmonics', type=int, default=48)
     parser.add_argument('--rows', type=int, nargs='*')
+    parser.add_argument('--order', type=int, choices=(1, 2), default=2)
+    parser.add_argument('--boundaries', nargs='+', choices=('fixed', 'traction', 'infinite'), default=('fixed', 'infinite'))
+    parser.add_argument('--output', type=Path)
     parser.add_argument('--assess-only', action='store_true')
+    parser.add_argument('--check-elements', action='store_true')
+    parser.add_argument('--protocol', action='store_true')
     args = parser.parse_args()
     with threadpool_limits(1):
-        if args.assess_only:
+        if args.check_elements:
+            check_elements()
+        elif args.protocol:
+            protocol()
+        elif args.assess_only:
             assess_saved()
         else:
-            assess(args.refinement, args.harmonics, args.rows)
+            assess(args.refinement, args.harmonics, args.rows, args.order, args.boundaries, args.output)

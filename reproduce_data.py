@@ -21,6 +21,9 @@ STUDIES = {
     "displacement": [("code/figure_exports/orthotropic_hole.py", "--from-data",
                       "--case", "fatima", "--refinement", "2", "--harmonics", "64"),
                      ("code/figure_exports/displacement_contours.py",)],
+    "notches": [("code/figure_exports/notch_scf.py",),
+                ("code/figure_exports/notch_scf.py", "--refinement", "2", "--harmonics", "64"),
+                ("code/figure_exports/notch_scf.py", "--assess-only")],
     "lining": [("code/figure_exports/lined_section_demo.py",),
                ("code/figure_exports/lining_capacity.py",),
                ("code/figure_exports/support_screening.py",)],
@@ -34,7 +37,7 @@ def main():
     parser.add_argument("study", choices=["figures", *STUDIES])
     parser.add_argument("--list", action="store_true", help="Print commands without running them")
     args = parser.parse_args()
-    commands = ([command for study in STUDIES.values() for command in study]
+    commands = ([command for name, study in STUDIES.items() if name != "notches" for command in study]
                 if args.study == "figures" else STUDIES.get(args.study, []))
     if args.list:
         for command in commands:

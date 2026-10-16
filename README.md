@@ -116,15 +116,24 @@ For Table 5, `khechai2018_table3.csv` preserves the source stress-concentration
 measurements from Khechai et al. (2018),
 DOI [10.1016/j.compstruct.2017.11.060](https://doi.org/10.1016/j.compstruct.2017.11.060).
 The paper compares all seven noncircular cases using the independently
-reported material properties and the 0.5 mm corner radius. Peak axial
-stress is divided by nominal applied stress; experimental differences and
-mesh-refinement changes are reported separately.
+reported material properties and the 0.5 mm corner radius. P2 triangles
+evaluate axial stress at hole-edge midpoints. The finite plate fixes its
+lower end and loads its upper end, as in the source's Section 5. The
+infinite model uses the shared Cauchy exterior with a projected P1 trace.
+Experimental differences, source-FEM differences and mesh refinement are
+reported separately. `--protocol` reproduces the boundary, element-order
+and stress-recovery controls on two representative holes.
 
 ```shell
 python -B code/figure_exports/notch_scf.py
 python -B code/figure_exports/notch_scf.py --refinement 2 --harmonics 64
 python -B code/figure_exports/notch_scf.py --assess-only
+python -B code/figure_exports/notch_scf.py --protocol
+python -B code/figure_exports/notch_scf.py --check-elements
 ```
+
+`python -B reproduce_data.py notches` regenerates both resolution tables
+and their assessment.
 
 ## Model and data interpretation
 
