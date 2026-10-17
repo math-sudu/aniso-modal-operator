@@ -96,7 +96,7 @@ def boundary_edges(cells, nodes):
     lookup = {tuple(sorted(pair)): (e, j) for pair, e, j in zip(sides[touching], elements, local)}
     return np.array([lookup[tuple(sorted((a, b)))] for a, b in zip(nodes, np.roll(nodes, -1))]).T
 
-def solve(data, mat, kind, sigma, harmonics, order):
+def solve(data, mat, kind, sigma, harmonics, order, return_fields=False):
     """P1/P2 elasticity, with a P1 trace restriction on the DtN interface."""
     if order == 2:
         data = quadratic_mesh(data)
@@ -181,7 +181,11 @@ def solve(data, mat, kind, sigma, harmonics, order):
         np.add.at(weights, cells[adjacent, j], area[adjacent])
     peak = np.argmax(edge_stress[:, 1])
     point = xy[[wall[peak], np.roll(wall, -1)[peak]]].mean(axis=0)
-    return dict(axial_scf=edge_stress[peak, 1] / sigma, hoop_scf=np.max(edge_stress[:, 0] + edge_stress[:, 1]) / sigma, centroid_scf=center_stress[:, 1].max() / sigma, recovered_node_scf=np.max(sums[wall, 1] / weights[wall]) / sigma, peak_x_mm=point[0], peak_y_mm=point[1], vertices=len(xy), triangles=len(cells), residual=residual)
+    info = dict(axial_scf=edge_stress[peak, 1] / sigma, hoop_scf=np.max(edge_stress[:, 0] + edge_stress[:, 1]) / sigma, centroid_scf=center_stress[:, 1].max() / sigma, recovered_node_scf=np.max(sums[wall, 1] / weights[wall]) / sigma, peak_x_mm=point[0], peak_y_mm=point[1], vertices=len(xy), triangles=len(cells), residual=residual)
+    if return_fields:
+        midpoint_u = u[cells[we, 3 + wj]] if order == 2 else (u[wall] + u[np.roll(wall, -1)]) / 2
+        return (info, dict(xy=xy, displacement=u, edge_xy=(xy[wall] + xy[np.roll(wall, -1)]) / 2, edge_stress=edge_stress, edge_displacement=midpoint_u, external_work=float(f @ u.ravel())))
+    return info
 
 def assess(refinement, harmonics, selected, order=2, boundaries=('fixed', 'infinite'), output=None):
     with (HERE / 'khechai2018_table3.csv').open(encoding='utf-8', newline='') as stream:

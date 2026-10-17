@@ -60,10 +60,12 @@ are also written under `results/data/derived/`.
 
 | Result | Command after `python -B` |
 |---|---|
-| Table 3: pole placement | `code/figure_exports/pole_placement.py` |
+| Table 3: projected pole-placement comparison | `code/figure_exports/pole_placement.py --case projected --output results/data/derived/projected_work.csv` |
+| Automatic pole selection | `code/figure_exports/pole_placement.py --case automatic --output results/data/derived/automatic_poles.csv` |
 | Retained bands N=31/63/127 | `code/figure_exports/pole_placement.py --case bands --output results/data/derived/band_resolution.csv` |
 | Table 4: interface order | `code/figure_exports/trace_order.py` |
 | Table 5: noncircular-hole stress concentration | `code/figure_exports/notch_scf.py --refinement 2 --harmonics 64` |
+| Independent finite-plate implementation | `code/figure_exports/notch_independent.py` |
 | Table 6: staged plasticity, near domain | `code/figure_exports/localized_plasticity.py --mesh 48 256 --output results/data/derived/localized_plasticity_mesh_refined.csv` |
 | Table 6: staged plasticity, expanded domain | `code/figure_exports/localized_plasticity.py --mesh 48 128 --rho 4 --output results/data/derived/localized_plasticity_domain_expanded.csv` |
 | Section 7.4: same-law elastic first yield | `code/figure_exports/dp_onset.py` |
