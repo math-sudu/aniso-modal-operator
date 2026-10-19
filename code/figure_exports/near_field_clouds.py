@@ -10,14 +10,14 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / 'lib'))
 import numpy as np
 from matplotlib.path import Path as MplPath
-from exec20_src.fe_aniso import AnisoAnnulusFE
-from exec20_src.material import material_F
-from exec26_src import protocol as P
-from exec26_src.fe_mapped import MappedMesh, mapped_released_load, solve_condensed, strip_translation
+from anisotropic_elasticity.fe_aniso import AnisoAnnulusFE
+from anisotropic_elasticity.material import material_F
+from mapped_elasticity import protocol as P
+from mapped_elasticity.fe_mapped import MappedMesh, mapped_released_load, solve_condensed, strip_translation
 sys.path.insert(0, str(PROJECT_ROOT / 'code/closure'))
 from exterior_operator import condensed_mapped_system
-from exec26_src.geometry import horseshoe_map
-from exec26_src.ls_ref import LSReference, _ti_bridge
+from mapped_elasticity.geometry import horseshoe_map
+from mapped_elasticity.ls_ref import LSReference, _ti_bridge
 from lekhnitskii_general import LekhnitskiiGeneral, solve_ls
 OUT_DIR = PROJECT_ROOT / 'results' / 'data' / 'derived'
 P0_VERTICAL = -15000000.0
@@ -57,7 +57,7 @@ def insitu_raw():
 
 def verify_dip_convention(mat, dip_deg: float) -> float:
     """Return the measured physical dip and assert the 90 - dip relation."""
-    from exec20_src.material import compliance_voigt_principal, _rotate_z, _voigt_to_tensor, _tensor_to_voigt
+    from anisotropic_elasticity.material import compliance_voigt_principal, _rotate_z, _voigt_to_tensor, _tensor_to_voigt
     a0 = compliance_voigt_principal(mat.Eh, mat.Ev, mat.nu_vh, mat.nu_hh, mat.Gvh)
     S0 = _voigt_to_tensor(a0)
     phis = np.linspace(0.0, math.pi, 3601)

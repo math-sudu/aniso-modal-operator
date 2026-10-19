@@ -1,13 +1,13 @@
 # Code and input data
 
-For **A complex-potential DtN–FEM model for noncircular tunnel deformation
-and lining response**, by Pengcheng Zhu, Tielin Chen, Dingli Zhang and
+For **A complex-potential DtN–FEM formulation for nonlinear tunnel–ground
+interaction**, by Pengcheng Zhu, Tielin Chen, Dingli Zhang and
 Yulong Wang. Correspondence: tlchen1@bjtu.edu.cn.
 
 The repository contains the complex-potential exterior operator, its
 finite-element coupling, support and contact calculations, figure scripts and
-measured input data. Numerical tables and figures are generated locally.
-Original field photographs provide the engineering context in Figures 1 and 9.
+material and loading inputs. Numerical tables and figures are generated locally.
+Original field photographs provide the engineering context in Figures 1 and 8.
 
 ## Install and check
 
@@ -26,15 +26,14 @@ path. The last command recomputes the order-48/64 displacement-reference
 comparison for the central horseshoe case and writes
 `results/data/derived/reference_self_convergence.csv`.
 
-The source release runs independently of any other project checkout. The
-solver library derives from revision `23e7962d241005360f1f70d72db1387788b69a2a`;
-paper-specific operator corrections and calculations are included here.
+The source release runs independently of any other project checkout and
+includes the operator, near-field and support calculations used in the article.
 Comparisons that merely reread old result tables are omitted from the source
 release. Independent analytical and reference-resolution checks remain.
 
 ## Reproduce figures and tables
 
-For all ten figures, first generate their numerical data, then render:
+For all nine figures, first generate their numerical data, then render:
 
 ```shell
 python -B reproduce_data.py figures --list
@@ -52,11 +51,11 @@ For `exterior`, run `fields` first: the wall-profile calculation reads the
 24x128 error fields and extends them with the coarse and fine wall solutions.
 Results go to `results/data/derived/`; figure PDF/SVG files go to `figures/`.
 Times New Roman and STIX fonts are required for the manuscript typography.
-`reproduce_figures.py --only <display_job_id>` selects one of Figures 1–10;
+`reproduce_figures.py --only <figure_id>` selects one of Figures 1–9;
 the figure IDs and sizes are in `paper/figures/content_figure_spec.json`.
 
-The additional table studies use the following commands. Their output tables
-are also written under `results/data/derived/`.
+The additional table studies use the following commands. Outputs go to
+`results/data/derived/`, except for the W4 files written beside its scripts.
 
 | Result | Command after `python -B` |
 |---|---|
@@ -64,14 +63,15 @@ are also written under `results/data/derived/`.
 | Automatic pole selection | `code/figure_exports/pole_placement.py --case automatic --output results/data/derived/automatic_poles.csv` |
 | Retained bands N=31/63/127 | `code/figure_exports/pole_placement.py --case bands --output results/data/derived/band_resolution.csv` |
 | Table 4: interface order | `code/figure_exports/trace_order.py` |
-| Table 5: noncircular-hole stress concentration | `code/figure_exports/notch_scf.py --refinement 2 --harmonics 64` |
-| Independent finite-plate implementation | `code/figure_exports/notch_independent.py` |
-| Table 6: staged plasticity, near domain | `code/figure_exports/localized_plasticity.py --mesh 48 256 --output results/data/derived/localized_plasticity_mesh_refined.csv` |
-| Table 6: staged plasticity, expanded domain | `code/figure_exports/localized_plasticity.py --mesh 48 128 --rho 4 --output results/data/derived/localized_plasticity_domain_expanded.csv` |
-| Section 7.4: same-law elastic first yield | `code/figure_exports/dp_onset.py` |
+| Table 5: supported W4 model-test comparison | `code/experiments/duan2024/reproduce.py` |
+| Table 6: staged PINN ground, 1,632 neurons | `code/closure/near_field_pinn.py --output results/data/derived/near_field_pinn/medium` |
+| Table 6: 3,312-neuron refinement | `code/closure/near_field_pinn.py --radial 18 --angular 144 --output results/data/derived/near_field_pinn/fine` |
+| Table 6: half loading step | `code/closure/near_field_pinn.py --step 0.01 --output results/data/derived/near_field_pinn/step_refined` |
+| Section 6.4: independent history/field verification | `code/closure/check_near_field_pinn.py results/data/derived/near_field_pinn/fine` |
+| Section 6.4: elastic DP wall first yield, 0.42814 | `code/figure_exports/dp_wall_onset.py` |
 | Section 5.3: fixed-FE exterior replacements | `code/figure_exports/support_operator.py --study contact`, then `--study thickness`, `--study bonded --refined-spectral` and `--study plastic` |
-| Section 7.2; response Table R2-6: lining modulus | `code/figure_exports/lining_modulus.py` |
-| Section 7.2; response Table R2-19: local thickness | `code/figure_exports/lining_thickness.py` |
+| Section 6.2; response Table R2-6: lining modulus | `code/figure_exports/lining_modulus.py` |
+| Section 6.2; response Table R2-19: local thickness | `code/figure_exports/lining_thickness.py` |
 | Ground-yield constraint | `code/figure_exports/elastic_admissibility.py` |
 | Pressure uncertainty | `code/figure_exports/pressure_uncertainty.py` |
 | Capacity variability | `code/figure_exports/capacity_variability.py` |
@@ -83,80 +83,36 @@ demands and the stress–closure screen in dependency order. Running
 support tables against their release partition.
 
 Table 7 summarizes parameters and responses from seven cited studies.
-The refined Figure 10 contact data use a 48-by-256 ground mesh. For Table 4's
+The refined Figure 9 contact data use a 48-by-256 ground mesh. For Table 4's
 band check, use `trace_order.py --harmonics 191 --fine-only --output
 results/data/derived/trace_order_modal_refined.csv` under
 `code/figure_exports/`. Mesh, case and material options are documented by each
 script's `--help` where an argument parser is provided.
 
-## Experimental inputs and comparisons
-
-The source observations are supplied under `results/data/derived/` and are
-kept separate from the generated predictions.
-
-For Figure 6, `fatima2017_observations.csv` preserves the 2108 candidate
-image locations and decoding mask from Fatima and Rowlands (2017),
-DOI [10.17265/2159-5275/2017.04.005](https://doi.org/10.17265/2159-5275/2017.04.005).
-The comparison uses the 1278 readable locations, reflected to x transverse
-and y axial, with the source's 0.1R hole-edge exclusion and a 1.05 mm square
-subset average. The measured image and printed palette are retained in
-`figures/displacement-measurement/assets/fatima2017_measured_quadrant.npz`.
-For display, printed contour strokes take the nearest decoded fill color;
-the decoded bands, white gaps and numerical observations are preserved.
-
-`python -B reproduce_data.py displacement` generates the refined fields and
-the three continuous model contours used in Figure 6. To reproduce the
-coarse/fine assessment and normalized spatial-pattern metrics, run:
-
-```shell
-python -B code/figure_exports/orthotropic_hole.py --from-data --case fatima
-python -B code/figure_exports/orthotropic_hole.py --from-data --case fatima --refinement 2 --harmonics 64
-python -B code/figure_exports/orthotropic_hole.py --assess-only
-python -B displacement_pattern.py
-```
-
-For Table 5, `khechai2018_table3.csv` preserves the source stress-concentration
-measurements from Khechai et al. (2018),
-DOI [10.1016/j.compstruct.2017.11.060](https://doi.org/10.1016/j.compstruct.2017.11.060).
-The paper compares all seven noncircular cases using the independently
-reported material properties and the 0.5 mm corner radius. P2 triangles
-evaluate axial stress at hole-edge midpoints. The finite plate fixes its
-lower end and loads its upper end, as in the source's Section 5. The
-infinite model uses the shared Cauchy exterior with a projected P1 trace.
-Experimental differences, source-FEM differences and mesh refinement are
-reported separately. `--protocol` reproduces the boundary, element-order
-and stress-recovery controls on two representative holes, including the
-source's 20 segments per rounded corner.
-
-```shell
-python -B code/figure_exports/notch_scf.py
-python -B code/figure_exports/notch_scf.py --refinement 2 --harmonics 64
-python -B code/figure_exports/notch_scf.py --assess-only
-python -B code/figure_exports/notch_scf.py --protocol
-python -B code/figure_exports/notch_scf.py --check-elements
-```
-
-`python -B reproduce_data.py notches` regenerates both resolution tables
-and their assessment.
+The W4 geometry, measured displacement curves and model inputs are in
+`code/experiments/duan2024/`. Its [README](code/experiments/duan2024/README.md)
+documents source locations, mesh/step checks and the input and boundary
+comparisons. The PINN commands above generate their histories, weights and
+independent checks locally.
 
 ## Model and data interpretation
 
-- `lib/exec20_src/` contains TI material, circular-harmonic and finite-element
-  routines. `lib/exec26_src/` contains conformal maps, exterior assembly,
+- `lib/anisotropic_elasticity/` contains TI material, circular-harmonic and finite-element
+  routines. `lib/mapped_elasticity/` contains conformal maps, exterior assembly,
   mapped finite elements and independent complex-potential references.
-- `code/closure/numeric/p21_exact_evaluation.py` builds the general-map
+- `code/closure/numeric/cauchy_evaluation.py` builds the general-map
   Cauchy-constraint operator. The shared production entry in
   `code/closure/exterior_operator.py` uses N+64 resultant harmonics,
   enforces the simple-root domain for general maps, and supplies a stable
   coincident-root block for circles and ellipses. It couples periodic P1
   traces through two-sided Fourier projection, `pi*T.T*S_modal*T`;
-  `p22_graded_kernels.py` evaluates the explicit
+  `graded_kernels.py` evaluates the explicit
   first- and second-order mapping corrections. The pole-based realization is
-  in `lib/exec26_src/sf_general.py`.
+  in `lib/mapped_elasticity/sf_general.py`.
 - Numerical horseshoe parameters are prescribed scenarios. Geometry follows
   Zeng et al. (2024), DOI
   [10.1016/j.ijrmms.2024.105880](https://doi.org/10.1016/j.ijrmms.2024.105880),
-  with radius 5.034 m and the coefficients in `lib/exec26_src/protocol.py`.
+  with radius 5.034 m and the coefficients in `lib/mapped_elasticity/protocol.py`.
   The physical frame is `x_phys = -y_map`, `y_phys = x_map`.
 - The material family has `E_v = 10.50 GPa`, `nu_vh = 0.20`,
   `nu_hh = 0.25` and `G_vh = 4.20 GPa`. In the upright horseshoe,

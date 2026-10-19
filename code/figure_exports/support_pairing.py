@@ -10,7 +10,7 @@ spec.loader.exec_module(support)
 lined = support.lined
 from exterior_operator import assemble_modal, p1_projection, projected_work
 from modal_condensation import condense_work, nodal_from_modal
-from exec26_src.fe_mapped import theta_ring_mass, solve_condensed, strip_translation
+from mapped_elasticity.fe_mapped import theta_ring_mass, solve_condensed, strip_translation
 
 class Pairings:
 
@@ -63,7 +63,7 @@ def unlined_case(bank, nr, pressure):
     force = lined.mapped_released_load(mesh, *lined.insitu(pressure))
     fields, rows = ({}, [])
     if nr == 12:
-        from exec26_src.ls_ref import LSReference
+        from mapped_elasticity.ls_ref import LSReference
         ref = LSReference(mat, lined.SMAP, *lined.insitu(pressure), n_order=48, n_collocation=1200)
         ur = strip_translation(np.column_stack(ref.displacements(mesh.xy[:, 0], mesh.xy[:, 1])).ravel())
     for route in bank.modal:

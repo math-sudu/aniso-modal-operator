@@ -12,14 +12,14 @@ sys.path.insert(0, str(ROOT / 'code' / 'closure'))
 sys.path.insert(0, str(ROOT / 'code' / 'closure' / 'numeric'))
 from closure_env import bridge_pinned
 bridge_pinned()
-from exec20_src.material import material_F
-from exec26_src import protocol as P
-from exec26_src.fe_mapped import AnisoAnnulusFE, MappedMesh, condensed_mapped_system as spectral_system, mapped_released_load, solve_condensed, strip_translation
-from exec26_src.geometry import horseshoe_map
-from exec26_src.ls_ref import LSReference
+from anisotropic_elasticity.material import material_F
+from mapped_elasticity import protocol as P
+from mapped_elasticity.fe_mapped import AnisoAnnulusFE, MappedMesh, condensed_mapped_system as spectral_system, mapped_released_load, solve_condensed, strip_translation
+from mapped_elasticity.geometry import horseshoe_map
+from mapped_elasticity.ls_ref import LSReference
 from modal_condensation import condense_with, nodal_from_modal
 from exterior_operator import condensed_mapped_system
-from tj_operator_grade_convergence import composed_modal
+from operator_grade_convergence import composed_modal
 OUT = ROOT / 'results/data/derived'
 P0_V, P0_H, P0_S = (-15000000.0, -13500000.0, 0.0)
 RHO = 2.0
@@ -275,7 +275,7 @@ def check_route_replication() -> None:
     """Check local synthesis and condensation using the library's spectral matrix.
 
 Agreement with the library's condensed system isolates operator changes from changes in finite-element condensation."""
-    from exec26_src.sf_general import assemble_modal_dtn
+    from mapped_elasticity.sf_general import assemble_modal_dtn
     n_r, n_t = NEAR_LADDER[0]
     n_h = n_t // 2 - 1
     mat = material_F(2.625, 45.0, 'routegate')

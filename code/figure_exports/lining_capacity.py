@@ -68,7 +68,7 @@ def recover(ring, u, identity, modulus=lined.E_LIN):
 
 def checks():
     """Affine displacement and curved-ring Lame stress recovery controls."""
-    from exec26_src.geometry import circle_map
+    from mapped_elasticity.geometry import circle_map
     ring = lined.LiningRing(circle_map(5.0), np.arange(128) * 2 * np.pi / 128, 0.4, 16)
     strain = np.array([-0.0001, 2e-05, 3e-05])
     u = np.column_stack((strain[0] * ring.xy[:, 0] + 0.5 * strain[2] * ring.xy[:, 1], strain[1] * ring.xy[:, 1] + 0.5 * strain[2] * ring.xy[:, 0])).ravel()

@@ -1,3 +1,4 @@
+import csv
 import numpy as np
 from matplotlib.patches import Circle, FancyArrowPatch, Polygon
 from matplotlib.path import Path
@@ -150,4 +151,10 @@ def draw_sampling(spec, width, height, labels):
         line([(x, 4)], role='shared-symbol-key', color=colour, ls='none', marker=marker, ms=3.5, mfc=face, mew=0.75)
         text(x + 2.2, 4, value, size=7.5)
     checks.update({'marked_sample_index': marked, 'parameter_scale_mm': 18.0, 'branch_image_scale_mm': 18.0, 'full_preimage_scale_mm': 6.0, 'unit_disc_enlargement': 3.0, 'reference_adaptation': 'Baxi F21 object connections and F23 corresponding state markers', 'composition': 'Two connected branch paths with mapped collars and complete preimage planes'})
+    source_data = method.ROOT / 'figures/analyticity-sampling/source_data.csv'
+    source_data.parent.mkdir(parents=True, exist_ok=True)
+    with source_data.open('w', encoding='utf-8', newline='') as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator='\n')
+        writer.writeheader()
+        writer.writerows(rows)
     return (fig, checks)

@@ -1,0 +1,42 @@
+{
+  "source_doi": "10.1038/s41598-024-63438-5",
+  "case": "Dry excavation; W4 ground displacement in Figure 3",
+  "geometry": {
+    "opening_width_mm": 260,
+    "opening_height_mm": 240,
+    "box_width_mm": 1600,
+    "box_height_mm": 1600,
+    "box_axial_depth_mm": 500,
+    "crown_cover_mm": 790,
+    "gauge_offset_mm": 50,
+    "side_gauge_y_mm": -20.4808983014382
+  },
+  "ground": {
+    "young_MPa": 20.5,
+    "poisson": 0.32,
+    "cohesion_MPa": 0.031,
+    "friction_angle_deg": 46.93
+  },
+  "load": {
+    "vertical_force_kN": 200,
+    "vertical_pressure_MPa": 0.25
+  },
+  "support": {
+    "young_MPa": 269,
+    "poisson": 0.21,
+    "compressive_strength_MPa": 2.4,
+    "thickness_mm": 6
+  },
+  "model": "Plane strain; homogeneous dry clay; bonded gypsum ring using the thickness in Table 4; Mohr-Coulomb perfect plasticity with zero dilation and zero tensile strength.",
+  "measurement": "Digitized W4 0-50 cm increments; crown vertical and side one-sided inward movement; ground gauges 50 mm outside the opening.",
+  "provenance": "README.md gives the source locations, assumptions and observation definitions.",
+  "table5": {
+    "dtn": {
+      "lateral_ratio": 0.83,
+      "installation_release": 0.7,
+      "interface_radius_mm": 600.0,
+      "support_thickness_mm": 6.0,
+      "step": 0.025
+    }
+  }
+}

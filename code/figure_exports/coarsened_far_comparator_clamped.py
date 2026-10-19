@@ -9,7 +9,7 @@ sys.path.insert(0, str(ROOT / 'code' / 'closure' / 'numeric'))
 sys.path.insert(0, str(ROOT / 'code' / 'figure_exports'))
 from closure_env import bridge_pinned
 bridge_pinned()
-from exec20_src.material import material_F
+from anisotropic_elasticity.material import material_F
 from coarsened_far_comparator import GROWTH_LADDER, RHO_FAR, coarsened_mesh, coarsened_solve, near_block_gate, shipped_row
 from exterior_treatment_sweep import NEAR_LADDER, PIN_CASE, REF_N_COLLOCATION, REF_N_ORDER, certified_reference, operator_solve, rel_to_ls
 OUT = ROOT / 'results/data/derived/coarsened_far_comparator_clamped.csv'

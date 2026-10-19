@@ -11,11 +11,11 @@ ROOT = Path(__file__).resolve().parent
 for folder in ("lib", "code/closure", "code/closure/numeric", "code/figure_exports"):
     sys.path.insert(0, str(ROOT / folder))
 
-from exec20_src.material import material_F
-from exec26_src.geometry import SectionMap
-from exec26_src.sf_twoterm import modal_blocks_density
-from p21_exact_evaluation import assemble_exact, heldout_certificate
-from p22_graded_kernels import closed_S1, closed_S2
+from anisotropic_elasticity.material import material_F
+from mapped_elasticity.geometry import SectionMap
+from mapped_elasticity.sf_twoterm import modal_blocks_density
+from cauchy_evaluation import assemble_exact, heldout_certificate
+from graded_kernels import closed_S1, closed_S2
 from support_screening import screening_rows, verify_saved_partition
 from elastic_admissibility import checks as check_elastic_path
 

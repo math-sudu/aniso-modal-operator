@@ -11,13 +11,13 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'code' / 'closure'))
 from closure_env import bridge_pinned
 bridge_pinned()
-from exec20_src.fe_aniso import assemble_stiffness_D
-from exec20_src.material import material_F
-from exec26_src import protocol as P
-from exec26_src.fe_mapped import AnisoAnnulusFE, MappedMesh, mapped_released_load
+from anisotropic_elasticity.fe_aniso import assemble_stiffness_D
+from anisotropic_elasticity.material import material_F
+from mapped_elasticity import protocol as P
+from mapped_elasticity.fe_mapped import AnisoAnnulusFE, MappedMesh, mapped_released_load
 from exterior_operator import condensed_mapped_system
-from exec26_src.geometry import horseshoe_map
-from proto_src.fe_annulus import _bmat_all, dmat_plane_strain
+from mapped_elasticity.geometry import horseshoe_map
+from isotropic_elasticity.fe_annulus import _bmat_all, dmat_plane_strain
 OUT = ROOT / 'results/data/derived'
 P0_V = -15000000.0
 K_BASE = 0.9
@@ -248,7 +248,7 @@ def _pinned_solve(K, f, fixed, n_dof):
 
 def unlined_operator_solve(mat, n_r: int, n_t: int, s_scale: float=1.0, load=None):
     """The pinned unlined machinery, untouched, for the pin and lam ladders."""
-    from exec26_src.fe_mapped import solve_condensed, strip_translation
+    from mapped_elasticity.fe_mapped import solve_condensed, strip_translation
     mesh = MappedMesh(SMAP, RHO, n_r, n_t)
     fe = AnisoAnnulusFE(mesh, mat)
     K_sys, _ = condensed_mapped_system(fe, mat, SMAP, RHO)
@@ -321,7 +321,7 @@ def gate_lame() -> list[dict]:
     """Check recovered thrust and moment against the exact Lame ring.
 
 Under uniform extrados pressure, the hoop stress is sigma_tt = -p Ro^2 (1 + Ri^2/r^2) / (Ro^2 - Ri^2). Its thickness integrals give thrust and moment; N = p Ro supplies an independent thrust check. Refine the layer count at fixed circumferential resolution to measure thickness convergence and possible locking as element aspect ratios increase."""
-    from exec26_src.geometry import circle_map
+    from mapped_elasticity.geometry import circle_map
     r_o, t, p = (5.0, 0.5, 4000000.0)
     r_i = r_o - t
     smap = circle_map(r_o)
@@ -451,18 +451,9 @@ Keep the circumferential station count fixed and refine the ring layers at all n
     return rows
 
 def stage_lateral() -> list[dict]:
-    """The nine points repeated at the source's own outer lateral ratios.
+    """Evaluate all nine material cases at each lateral pressure coefficient.
 
-    Everything the subsection reads off the ring, and the closure shape above
-    all, was established at one lateral pressure coefficient, and that one is
-    nearly hydrostatic: the deviatoric part of the released load at 0.9 is a
-    quarter of what it is at either outer value of the source's own sweep.  So
-    the reading was taken where the in-situ state carries the least shape of
-    its own, which is where a fabric-decides-the-shape claim is easiest to
-    make and hardest to trust.  Both end members are solved at each
-    coefficient, so the release partition follows at every point by the same
-    superposition the baseline uses.
-    """
+Solve bonded and unlined end members with the same inputs, retaining their actions and closures for the elastic release partition."""
     n_r, n_t = MESH_MAIN
     rows = []
     for k in K_SWEEP:

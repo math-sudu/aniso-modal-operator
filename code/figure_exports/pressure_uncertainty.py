@@ -10,7 +10,7 @@ capacity = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(capacity)
 lined = capacity.lined
 import support_screening as screening
-from exec26_src.fe_mapped import solve_condensed
+from mapped_elasticity.fe_mapped import solve_condensed
 
 def key(row):
     return tuple((row[k] for k in ('modulus_ratio', 'bedding_dip_deg', 'lateral_pressure_coefficient')))

@@ -29,7 +29,7 @@ RATIOS, DIPS = ((1.25, 2.625, 4.0), (0.0, 45.0, 90.0))
 RATIO_COLORS = dict(zip(RATIOS, (INK, RED, BLUE)))
 DIP_COLORS = dict(zip(DIPS, (BLUE, RED, INK)))
 LABELS = {}
-HEIGHTS = {entry['display_job_id']: entry['dimensions_mm'][1] for entry in SPEC['figures']}
+HEIGHTS = {entry['figure_id']: entry['dimensions_mm'][1] for entry in SPEC['figures']}
 
 def label(fig, x, y, value, **kwargs):
     return note(fig, x, y, LABELS.get(value, value), fontsize=kwargs.pop('fontsize', 8), **kwargs)
@@ -143,7 +143,7 @@ def draw_atlas(kind):
             else:
                 ax.get_xticklabels()[0].set_ha('left')
                 ax.get_xticklabels()[-1].set_ha('right')
-            a = np.deg2rad(dip)
+            a = np.deg2rad(-dip)
             ax.plot([-8 - 1.5 * np.cos(a), -8 + 1.5 * np.cos(a)], [8 - 1.5 * np.sin(a), 8 + 1.5 * np.sin(a)], color='white', lw=2, ls='-')
             ax.plot([-8 - 1.5 * np.cos(a), -8 + 1.5 * np.cos(a)], [8 - 1.5 * np.sin(a), 8 + 1.5 * np.sin(a)], color=INK, lw=0.7, ls='-')
             ax.text(0.04, 0.045, f'({chr(97 + 5 * i + j)})', transform=ax.transAxes, fontsize=7, bbox={'fc': 'white', 'ec': 'none', 'pad': 0.5})
@@ -174,7 +174,7 @@ def draw_atlas(kind):
                 peak_rows.append({'ratio': ratio, 'dip': dip, 'magnitude_mm': float(peak.u_mag_mm), 'angle_deg': angle})
             if i == 0:
                 label(fig, x + 11.5, 132, f'{dip:g}°', ha='center', fontsize=8)
-    bar = shared_bar(fig, artists, 20, 146, 108, 'Reference minor principal stress $\\sigma_3$ (MPa)' if stress else 'DtN–FEM displacement $|u|$ (mm)', [limits[0], -40, -25, -20, limits[1]] if stress else np.linspace(*limits, 5))
+    bar = shared_bar(fig, artists, 20, 146, 108, 'Minimum in-plane principal stress $\\sigma_{\\min}^{\\rm in}$ (MPa)' if stress else 'DtN–FEM displacement $|u|$ (mm)', [limits[0], -40, -25, -20, limits[1]] if stress else np.linspace(*limits, 5))
     bar.ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f'{value:.1f}'))
     label(fig, 71.5, 138, 'Bedding dip; diamonds: peak compression on each side' if stress else 'Bedding dip; dashed wall: 130× displacement; circles: wall maxima', ha='center', fontsize=7)
     label(fig, 71.5, 40, 'Coordinates in metres; dashed ovals: wall-foot concentration' if stress else 'Coordinates in metres; labelled peak angles at $E_h/E_v=4$', ha='center', fontsize=7)
@@ -237,7 +237,7 @@ def coloured_lining(ax, actions, key, cmap):
     return artist
 
 def draw_lining():
-    import fig_dj19_lined_demo as lining
+    import lining_response_figure as lining
     fig = fs.figure(WIDTH, 210)
     for x, letter, name, title in [(3, 'a', 'moxi_shotcrete_spalling.jpg', 'Shotcrete spalling'), (74, 'b', 'moxi_steel_arch.jpg', 'Steel-arch distortion')]:
         panel(fig, x, 204, letter, title)
@@ -354,11 +354,7 @@ def draw_kernels():
 def draw_exterior():
     from exterior_overview import draw_exterior as draw_overview
     return draw_overview(SPEC, WIDTH, HEIGHTS['exterior-cost'], LABELS)
-
-def draw_displacement_measurement():
-    from displacement_measurement import draw_displacement
-    return draw_displacement(WIDTH, HEIGHTS['displacement-measurement'], LABELS)
-DRAWERS = {'domain-coupling': draw_domain, 'excavation-response': lambda: draw_atlas('stress'), 'displacement-response': lambda: draw_atlas('displacement'), 'lined-section-demo': draw_lining, 'frictional-contact': draw_friction, 'density-invariance': draw_density, 'analyticity-sampling': draw_sampling, 'kernel-validity': draw_kernels, 'exterior-cost': draw_exterior, 'displacement-measurement': draw_displacement_measurement}
+DRAWERS = {'domain-coupling': draw_domain, 'excavation-response': lambda: draw_atlas('stress'), 'displacement-response': lambda: draw_atlas('displacement'), 'lined-section-demo': draw_lining, 'frictional-contact': draw_friction, 'density-invariance': draw_density, 'analyticity-sampling': draw_sampling, 'kernel-validity': draw_kernels, 'exterior-cost': draw_exterior}
 STEMS = {'domain-coupling': 'domain_coupling', 'lined-section-demo': 'lined_demo'}
 
 def finalize_svg(pdf, report):
@@ -383,7 +379,7 @@ def main():
         fig.set_size_inches(WIDTH / 25.4, HEIGHTS[job] / 25.4)
         out = ROOT / 'figures' / job / (STEMS.get(job, job.replace('-', '_')) + '.pdf')
         preview = args.preview_dir / (job + '.png') if args.preview_dir else None
-        entry = next((entry for entry in SPEC['figures'] if entry['display_job_id'] == job))
+        entry = next((entry for entry in SPEC['figures'] if entry['figure_id'] == job))
         report = fs.save(fig, out, size_mm=fig.get_size_inches() * 25.4, preview_path=preview, spec={'series_colors': entry.get('series_colors', [])})
         finalize_svg(out, report)
         plt.close(fig)

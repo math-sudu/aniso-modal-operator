@@ -8,11 +8,11 @@ sys.path.insert(0, str(ROOT / 'code' / 'closure'))
 sys.path.insert(0, str(ROOT / 'code' / 'closure' / 'numeric'))
 from closure_env import bridge_pinned
 bridge_pinned()
-from exec26_src import protocol as P
-from exec26_src.geometry import horseshoe_map
-from exec26_src.sf_twoterm import modal_blocks_density
-from p21_exact_evaluation import assemble_exact
-from p22_graded_kernels import closed_S1, closed_S2
+from mapped_elasticity import protocol as P
+from mapped_elasticity.geometry import horseshoe_map
+from mapped_elasticity.sf_twoterm import modal_blocks_density
+from cauchy_evaluation import assemble_exact
+from graded_kernels import closed_S1, closed_S2
 N_H = 8
 N_T = 64
 N_T_CHECK = 96

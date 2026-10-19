@@ -11,9 +11,9 @@ sys.path.insert(0, str(ROOT / 'code' / 'closure' / 'numeric'))
 sys.path.insert(0, str(ROOT / 'code' / 'figure_exports'))
 from closure_env import bridge_pinned
 bridge_pinned()
-from exec20_src.material import material_F
-from exec26_src import protocol as P
-from exec26_src.fe_mapped import AnisoAnnulusFE, MappedMesh, mapped_released_load
+from anisotropic_elasticity.material import material_F
+from mapped_elasticity import protocol as P
+from mapped_elasticity.fe_mapped import AnisoAnnulusFE, MappedMesh, mapped_released_load
 from exterior_treatment_sweep import NEAR_LADDER, P0_H, P0_S, P0_V, PIN_CASE, REF_N_COLLOCATION, REF_N_ORDER, RHO, SMAP, certified_reference, far_mesh_solve, operator_solve, rel_to_ls, _stat
 OUT = ROOT / 'results/data/derived/coarsened_far_comparator.csv'
 SHIPPED_COST = ROOT / 'results/data/derived/exterior_cost_ladder.csv'

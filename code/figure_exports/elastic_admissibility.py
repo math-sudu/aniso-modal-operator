@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'code/figure_exports'))
 import lined_section_demo as lined
 import support_screening as screening
-from exec26_src.fe_mapped import solve_condensed
+from mapped_elasticity.fe_mapped import solve_condensed
 
 def axial_stress(sig, mat):
     """Recover sigma_zz from the TI 3D compliance, in the raw map frame."""
@@ -109,7 +109,7 @@ def checks():
     np.testing.assert_allclose(lam, (2 * p + 2 * np.sqrt(3) * cohesion) / (4 * p), atol=1e-12)
     assert status == 'shear_yield'
     np.testing.assert_allclose(first_yield(s0, du, 0)[0], 0.5, atol=1e-12)
-    from exec20_src.material import compliance_voigt_principal, _voigt_to_tensor, _rotate_z, _tensor_to_voigt
+    from anisotropic_elasticity.material import compliance_voigt_principal, _voigt_to_tensor, _rotate_z, _tensor_to_voigt
     sig = np.array([[-7.0, -15.0, 3.0]])
     for dip in (0, 31, 90):
         mat = lined.material_F(4, dip)

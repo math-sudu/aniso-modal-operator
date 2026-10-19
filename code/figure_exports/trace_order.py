@@ -14,14 +14,14 @@ from closure_env import bridge_pinned
 bridge_pinned()
 sys.path.insert(0, str(ROOT / 'code/closure/numeric'))
 sys.path.insert(0, str(ROOT / 'code/figure_exports'))
-from exec20_src.material import material_F
-from exec26_src import protocol as P
-from exec26_src.geometry import horseshoe_map
-from exec26_src.fe_mapped import theta_ring_mass
-from exec26_src.fe_mapped import MappedMesh, AnisoAnnulusFE, mapped_released_load, solve_condensed
+from anisotropic_elasticity.material import material_F
+from mapped_elasticity import protocol as P
+from mapped_elasticity.geometry import horseshoe_map
+from mapped_elasticity.fe_mapped import theta_ring_mass
+from mapped_elasticity.fe_mapped import MappedMesh, AnisoAnnulusFE, mapped_released_load, solve_condensed
 from modal_condensation import nodal_from_modal
 from modal_condensation import condense_with
-from p21_exact_evaluation import assemble_exact
+from cauchy_evaluation import assemble_exact
 from near_field_clouds import RingReference
 SMAP = horseshoe_map(1.0, P.R_HS, P.C_HS)
 LOAD = np.array([-15000000.0, -13500000.0, 0.0])

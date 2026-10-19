@@ -5,7 +5,7 @@ import numpy as np
 from closure_env import bridge_pinned
 bridge_pinned()
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'numeric'))
-from p21_exact_evaluation import assemble_exact
+from cauchy_evaluation import assemble_exact
 from modal_condensation import condense_work
 
 def twoterm_modal(mat, n_h):

@@ -14,13 +14,13 @@ sys.path.insert(0, str(ROOT / 'code/closure'))
 from closure_env import bridge_pinned
 bridge_pinned()
 sys.path.insert(0, str(ROOT / 'code/closure/numeric'))
-from exec20_src.material import material_F
-from exec26_src import protocol as P
-from exec26_src.geometry import horseshoe_map, SectionMap
-from exec26_src.sf_general import GeneralExterior, ring_poles, _real_design, _spectral_dtheta, assemble_modal_dtn, rho_crit_of_map
-from exec26_src.fe_mapped import MappedMesh, AnisoAnnulusFE, mapped_released_load, solve_condensed, strip_translation
+from anisotropic_elasticity.material import material_F
+from mapped_elasticity import protocol as P
+from mapped_elasticity.geometry import horseshoe_map, SectionMap
+from mapped_elasticity.sf_general import GeneralExterior, ring_poles, _real_design, _spectral_dtheta, assemble_modal_dtn, rho_crit_of_map
+from mapped_elasticity.fe_mapped import MappedMesh, AnisoAnnulusFE, mapped_released_load, solve_condensed, strip_translation
 from modal_condensation import nodal_from_modal, condense_with, condense_work
-from p21_exact_evaluation import assemble_exact
+from cauchy_evaluation import assemble_exact
 from exterior_operator import assemble_modal, p1_projection, projected_work
 SMAP = horseshoe_map(1.0, P.R_HS, P.C_HS)
 LAYOUTS = {'default': {}, 'deep_ring': {'eta': 0.6}, 'near_ring': {'eta': 0.97}, 'tight_clusters': {'cluster_ratio': 0.1}, 'spread_clusters': {'cluster_ratio': 0.8}, 'ring_only': {'lightning': False}, 'basis_refined': {'eta': 0.97, 'n_modes': 192, 'n_grid': 1024}}

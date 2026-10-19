@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import scipy.sparse as sp
-from exec26_src.fe_mapped import AnisoAnnulusFE, _basis_profiles, _COMPS, theta_ring_mass
+from mapped_elasticity.fe_mapped import AnisoAnnulusFE, _basis_profiles, _COMPS, theta_ring_mass
 __all__ = ['nodal_from_modal', 'condense_with', 'condense_work']
 
 def nodal_from_modal(S_mod: np.ndarray, theta_nodes: np.ndarray, n_h: int) -> np.ndarray:

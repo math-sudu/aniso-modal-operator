@@ -17,16 +17,16 @@
   },
   "figures": [
     {
-      "display_job_id": "domain-coupling",
+      "figure_id": "domain-coupling",
       "dimensions_mm": [
         137.06932337,
-        134
+        164
       ],
       "series_colors": [],
       "data_sources": []
     },
     {
-      "display_job_id": "density-invariance",
+      "figure_id": "density-invariance",
       "dimensions_mm": [
         137.06932337,
         116
@@ -43,19 +43,18 @@
       ]
     },
     {
-      "display_job_id": "analyticity-sampling",
+      "figure_id": "analyticity-sampling",
       "dimensions_mm": [
         137.06932337,
         130
       ],
       "series_colors": [],
       "data_sources": [
-        "figures/analyticity-sampling/source_data.csv",
-        "results/data/derived/constraint_conditioning_law.csv"
+        "figures/analyticity-sampling/source_data.csv"
       ]
     },
     {
-      "display_job_id": "kernel-validity",
+      "figure_id": "kernel-validity",
       "dimensions_mm": [
         137.06932337,
         124
@@ -73,7 +72,7 @@
       ]
     },
     {
-      "display_job_id": "exterior-cost",
+      "figure_id": "exterior-cost",
       "dimensions_mm": [
         137.06932337,
         156
@@ -91,7 +90,7 @@
       ]
     },
     {
-      "display_job_id": "excavation-response",
+      "figure_id": "excavation-response",
       "dimensions_mm": [
         137.06932337,
         155
@@ -103,7 +102,7 @@
       ]
     },
     {
-      "display_job_id": "displacement-response",
+      "figure_id": "displacement-response",
       "dimensions_mm": [
         137.06932337,
         155
@@ -115,7 +114,7 @@
       ]
     },
     {
-      "display_job_id": "lined-section-demo",
+      "figure_id": "lined-section-demo",
       "dimensions_mm": [
         137.06932337,
         172
@@ -128,7 +127,7 @@
       ]
     },
     {
-      "display_job_id": "frictional-contact",
+      "figure_id": "frictional-contact",
       "dimensions_mm": [
         137.06932337,
         120
@@ -138,22 +137,6 @@
         "results/data/derived/frictional_contact_mesh_refined.csv",
         "results/data/derived/frictional_contact_mesh_refined_actions.csv",
         "results/data/derived/frictional_contact_mesh_refined_interface.csv"
-      ]
-    },
-    {
-      "display_job_id": "displacement-measurement",
-      "dimensions_mm": [
-        137.06932337,
-        150
-      ],
-      "series_colors": [
-        "#70787D",
-        "#E3E5E7"
-      ],
-      "data_sources": [
-        "results/data/derived/fatima2017_fields_refined.csv",
-        "results/data/derived/fatima2017_observations.csv",
-        "results/data/derived/displacement_contours.csv"
       ]
     }
   ]

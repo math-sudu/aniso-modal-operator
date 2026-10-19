@@ -8,11 +8,11 @@ from threadpoolctl import threadpool_limits
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'code/closure'))
 from exterior_operator import assemble_modal, twoterm_modal
-from p21_exact_evaluation import assemble_exact, require_simple_roots
-from exec20_src.material import material_F, material_ISO_path
-from exec26_src.geometry import SectionMap, horseshoe_map
-from exec26_src import protocol as P
-from exec26_src.sf_twoterm import modal_blocks_density
+from cauchy_evaluation import assemble_exact, require_simple_roots
+from anisotropic_elasticity.material import material_F, material_ISO_path
+from mapped_elasticity.geometry import SectionMap, horseshoe_map
+from mapped_elasticity import protocol as P
+from mapped_elasticity.sf_twoterm import modal_blocks_density
 
 def check_roots():
     for mat in P.materials_main() + [material_F(r, d) for r in (1.25, 2.625, 4.0) for d in (0, 45, 90)]:
@@ -56,7 +56,7 @@ def main():
             elapsed = time.perf_counter() - started
             rows.append(dict(n_h=band, route='spectral_384_2048', setup_seconds=elapsed, relative_difference=np.linalg.norm(spectral - modal) / np.linalg.norm(modal), reciprocity_defect=np.linalg.norm(spectral - spectral.T) / np.linalg.norm(spectral), minimum_exterior_eigenvalue=np.linalg.eigvalsh(-(spectral + spectral.T) / 2)[0]))
             print(rows[-2:], flush=True)
-    with ROOT / 'results/data/derived/production_entry.csv'.open('w', newline='', encoding='utf-8') as stream:
+    with (ROOT / 'results/data/derived/production_entry.csv').open('w', newline='', encoding='utf-8') as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)

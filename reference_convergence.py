@@ -10,11 +10,11 @@ from threadpoolctl import threadpool_limits
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'lib'))
-from exec20_src.material import material_F
-from exec26_src import protocol as P
-from exec26_src.geometry import horseshoe_map
-from exec26_src.fe_mapped import MappedMesh, strip_translation
-from exec26_src.ls_ref import LSReference
+from anisotropic_elasticity.material import material_F
+from mapped_elasticity import protocol as P
+from mapped_elasticity.geometry import horseshoe_map
+from mapped_elasticity.fe_mapped import MappedMesh, strip_translation
+from mapped_elasticity.ls_ref import LSReference
 
 
 def main():

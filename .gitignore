@@ -2,11 +2,14 @@ __pycache__/
 *.py[cod]
 .venv/
 /results/data/derived/*
-!/results/data/derived/fatima2017_observations.csv
-!/results/data/derived/khechai2018_table3.csv
 /results/data/reference/
 /results/data/generated/
 *.pdf
 *.svg
 *.png
 *.log
+!/references/papers/duan2024lining/source.pdf
+/code/experiments/duan2024/*.npz
+/code/experiments/duan2024/*.csv
+!/code/experiments/duan2024/geometry.csv
+!/code/experiments/duan2024/measurements.csv

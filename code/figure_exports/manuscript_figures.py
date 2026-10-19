@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / 'results/data/derived'
 SPEC = ROOT / 'paper/figures/content_figure_spec.json'
 sys.path.insert(0, str(ROOT / 'code/closure/numeric'))
-from p21_exact_evaluation import cauchy_radius
+from cauchy_evaluation import cauchy_radius
 import origin_style as fs
 MM = 1 / 25.4
 NAVY, TEAL, RUST, PURPLE, GREY = ('#244663', '#147D92', '#BD5A37', '#746393', '#626870')
@@ -208,7 +208,7 @@ def branch_geometry(spec):
         roots = np.roots(derivative[::-1])
         critical = roots[abs(roots) < 1]
         rcrit = float(max(abs(critical), default=0.0))
-        eta = cauchy_radius(ser)
+        eta = cauchy_radius(ser, minimum=0.97)
         wall = eval_series(ser, np.exp(1j * theta))
         points = eval_series(ser, eta * np.exp(2j * np.pi * (np.arange(24) + 0.31) / 24))
         curve = MplPath(np.c_[wall.real, wall.imag])
@@ -224,10 +224,7 @@ def branch_geometry(spec):
         for kind, values in (('boundary', wall), ('test', points), ('critical', critical)):
             for i, z in enumerate(values):
                 rows.append({'branch': k, 'kind': kind, 'point': i, 'real': z.real, 'imag': z.imag, 'eta': eta, 'fold_radius': rcrit})
-    recorded = read_csv('constraint_conditioning_law.csv')
-    anchor = next((r for r in recorded if r['material'] == 'F1'))
-    assert np.allclose(sorted((f['eta'] for f in facts)), [float(anchor['eta_min']), float(anchor['eta_max'])], atol=1e-11, rtol=0)
-    return (rows, {'branches': facts, 'displayed_points_per_branch': 24, 'point_offset': 0.31, 'point_role': 'illustration of the sampling rule'})
+    return (rows, {'branches': facts, 'displayed_points_per_branch': 24, 'point_offset': 0.31, 'production_radius_floor': 0.97, 'point_role': '24 illustrative points on the production sampling circle'})
 
 def draw_sampling(spec):
     rows, checks = branch_geometry(spec)

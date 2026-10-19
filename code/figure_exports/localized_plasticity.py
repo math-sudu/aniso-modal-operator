@@ -10,7 +10,7 @@ import scipy.sparse.linalg as sla
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'code/figure_exports'))
 import lined_section_demo as lined
-from exec20_src.material import compliance_voigt_principal, _voigt_to_tensor, _rotate_z, _tensor_to_voigt
+from anisotropic_elasticity.material import compliance_voigt_principal, _voigt_to_tensor, _rotate_z, _tensor_to_voigt
 IDENTITY = np.array([1.0, 1.0, 1.0, 0.0])
 DEV = np.eye(4) - np.outer(IDENTITY, IDENTITY) / 3
 SQRT2 = np.sqrt(2.0)

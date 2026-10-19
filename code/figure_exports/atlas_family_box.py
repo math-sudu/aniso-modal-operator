@@ -7,8 +7,8 @@ sys.dont_write_bytecode = True
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / 'lib'))
 import numpy as np
-from exec20_src import atlas as at
-from exec20_src.material import AnisoMaterial, material_F, material_SABNGS, material_WAI
+from anisotropic_elasticity import atlas as at
+from anisotropic_elasticity.material import AnisoMaterial, material_F, material_SABNGS, material_WAI
 OUT_DIR = PROJECT_ROOT / 'results' / 'data' / 'derived'
 FULL_OUT = OUT_DIR / 'atlas_family_box.csv'
 COARSE_OUT = OUT_DIR / 'atlas_family_box_coarse.csv'

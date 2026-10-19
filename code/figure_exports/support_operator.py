@@ -46,7 +46,7 @@ class Operators:
                 self.rows[-1].update(self.refined_stats)
         theta = 2 * np.pi * np.arange(nt) / nt
         self.nodal = {route: pole.nodal_from_modal(modal, theta, nh) for route, modal in self.modal.items()}
-        from exec26_src.fe_mapped import theta_ring_mass
+        from mapped_elasticity.fe_mapped import theta_ring_mass
         mass = np.kron(theta_ring_mass(nt), np.eye(2))
         self.work = {route: mass @ density for route, density in self.nodal.items()}
         self.traces = []
